@@ -1,0 +1,2 @@
+C:/Users/AAYUSHI/Desktop/User app and web/User app and web/android/app/.cxx/RelWithDebInfo/696s2720/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/AAYUSHI/Desktop/User app and web/User app and web/android/app/.cxx/RelWithDebInfo/696s2720/arm64-v8a/CMakeFiles/rebuild_cache.dir

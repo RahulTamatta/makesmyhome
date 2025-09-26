@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Demandium</string>
+    <string name="facebook_app_id">24101975842759745</string>
+    <string name="fb_login_protocol_scheme">fb24101975842759745</string>
+    <string name="facebook_client_token">c07cf4e32909d596f5114bed0fdde828</string>
+</resources>

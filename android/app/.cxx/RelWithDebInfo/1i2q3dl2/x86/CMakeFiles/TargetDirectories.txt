@@ -1,0 +1,2 @@
+C:/Users/AAYUSHI/Desktop/makehome/android/app/.cxx/RelWithDebInfo/1i2q3dl2/x86/CMakeFiles/edit_cache.dir
+C:/Users/AAYUSHI/Desktop/makehome/android/app/.cxx/RelWithDebInfo/1i2q3dl2/x86/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,2 @@
+C:/Users/AAYUSHI/Desktop/makehome/android/app/.cxx/Debug/22265t56/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/AAYUSHI/Desktop/makehome/android/app/.cxx/Debug/22265t56/x86_64/CMakeFiles/rebuild_cache.dir

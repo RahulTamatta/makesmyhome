@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="MakesMyHome - Your trusted home service provider">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="makesmyhome">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>makesmyhome</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Maps JavaScript API -->
+ <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7pkWHnzW2BJplHefeLcgmd9WhclMzP1E&libraries=places"></script>
+  
+  <!-- Loading screen for better UX -->
+  <style>
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0175C2;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+      margin-top: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #666;
+      font-size: 16px;
+    }
+    .error-message {
+      color: #d32f2f;
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading MakesMyHome...</div>
+    <div id="error" class="error-message" style="display: none;"></div>
+  </div>
+  
+  <script>
+    // Error handling and loading management
+    let loadingTimeout;
+    let hasLoaded = false;
+    
+    function hideLoading() {
+      if (!hasLoaded) {
+        hasLoaded = true;
+        const loading = document.getElementById('loading');
+        if (loading) {
+          loading.style.display = 'none';
+        }
+      }
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      const loadingText = document.querySelector('.loading-text');
+      if (errorDiv && loadingText) {
+        loadingText.textContent = 'Failed to load app';
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+      }
+    }
+    
+    // Set timeout to show error if app doesn't load in 15 seconds
+    loadingTimeout = setTimeout(() => {
+      if (!hasLoaded) {
+        showError('App is taking longer than expected. Please refresh the page.');
+      }
+    }, 15000);
+    
+    // Handle Flutter app loading
+    window.addEventListener('flutter-first-frame', hideLoading);
+    
+    // Fallback: hide loading when any Flutter content appears
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length > 0) {
+          const hasFlutterContent = Array.from(mutation.addedNodes).some(node => 
+            node.nodeType === 1 && (node.tagName === 'FLUTTER-VIEW' || node.id === 'app')
+          );
+          if (hasFlutterContent) {
+            hideLoading();
+          }
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Error handling for script loading
+    window.addEventListener('error', (e) => {
+      console.error('Loading error:', e);
+      if (e.filename && e.filename.includes('main.dart.js')) {
+        showError('Failed to load main application file. Please check your internet connection.');
+      }
+    });
+  </script>
+  
+  <script src="flutter_bootstrap.js" async onerror="showError('Failed to load Flutter bootstrap')"></script>
+</body>
+</html>

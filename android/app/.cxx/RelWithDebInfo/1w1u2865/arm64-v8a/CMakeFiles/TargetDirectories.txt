@@ -1,0 +1,2 @@
+D:/AAyushi/Remote Work Himanshu/Store app/makehome/android/app/.cxx/RelWithDebInfo/1w1u2865/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/AAyushi/Remote Work Himanshu/Store app/makehome/android/app/.cxx/RelWithDebInfo/1w1u2865/arm64-v8a/CMakeFiles/rebuild_cache.dir
