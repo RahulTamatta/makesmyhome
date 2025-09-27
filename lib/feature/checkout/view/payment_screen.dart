@@ -220,6 +220,15 @@ class MyInAppBrowser extends InAppBrowser {
     if (kDebugMode) {
       print("\n\nStarted: $url\n\n");
     }
+    
+    // DEBUGGING: Check if backend is immediately redirecting to success
+    final urlStr = url.toString();
+    if (urlStr.contains('payment/razor-pay/pay') && urlStr.contains('payment_id=')) {
+      debugPrint('[PAYMENT_DEBUG] ⚠️ BACKEND ISSUE: Immediate redirect to success detected!');
+      debugPrint('[PAYMENT_DEBUG] URL: $urlStr');
+      debugPrint('[PAYMENT_DEBUG] This means backend is not creating new payment session');
+    }
+    
     // Do not redirect-check on start; wait for page to finish loading to avoid premature closes
     // _pageRedirect(url.toString());
   }
@@ -398,13 +407,44 @@ class MyInAppBrowser extends InAppBrowser {
           tokenIndicatesSuccess = decoded.contains('attribute_id=');
         } catch (_) {}
       }
-      bool isSuccess = isOurDomain &&
-          (flagSuccess ||
-              qp['status'] == 'success' ||
-              qp['payment_status'] == 'success' ||
-              tokenIndicatesSuccess ||
-              razorPaymentComplete ||
-              razorVerified);
+      
+      // FIXED: For subscription payments, only consider success if user actually interacted with payment
+      bool isSuccess = false;
+      if (fromPage == "subscription") {
+        // For subscriptions, accept success if:
+        // 1. Real razorpay success with verification params
+        // 2. Success flag with token (after razorpay verification)
+        // 3. Verified razorpay payment
+        isSuccess = isOurDomain && (
+          (flagSuccess && tokenIndicatesSuccess) ||  // Success page with valid token
+          (qp['status'] == 'success' && qp.containsKey('razorpay_signature')) ||
+          (path.contains('payment/success') && flagSuccess && tokenIndicatesSuccess) ||
+          razorVerified
+        );
+        
+        // Do NOT auto-close on razor-pay/pay URLs for subscriptions - wait for actual payment
+        if (path.contains('payment/razor-pay/pay') && !qp.containsKey('razorpay_signature')) {
+          print('[PAYMENT_DEBUG] ⚠️ Ignoring fake success - waiting for real payment interaction');
+          isSuccess = false;
+        }
+        
+        // Debug the success detection
+        if (isSuccess) {
+          print('[PAYMENT_DEBUG] ✅ REAL SUCCESS DETECTED!');
+          print('[PAYMENT_DEBUG] - flagSuccess: $flagSuccess');
+          print('[PAYMENT_DEBUG] - tokenIndicatesSuccess: $tokenIndicatesSuccess');
+          print('[PAYMENT_DEBUG] - path: $path');
+        }
+      } else {
+        // Original logic for other payment types
+        isSuccess = isOurDomain &&
+            (flagSuccess ||
+                qp['status'] == 'success' ||
+                qp['payment_status'] == 'success' ||
+                tokenIndicatesSuccess ||
+                razorPaymentComplete ||
+                razorVerified);
+      }
 
       bool isFailed = flagFail ||
           (qp['status'] == 'fail' ||
@@ -431,13 +471,31 @@ class MyInAppBrowser extends InAppBrowser {
         print('Debug flags -> razorVerified:$razorVerified razorPaymentComplete:$razorPaymentComplete tokenIndicatesSuccess:$tokenIndicatesSuccess');
         print('Domain check -> isOurDomain:$isOurDomain');
         print('Flag values -> flag:$flag flagSuccess:$flagSuccess flagFail:$flagFail');
+        
+        // Additional debug for subscription payments
+        if (fromPage == "subscription") {
+          print('[SUBSCRIPTION_DEBUG] Razorpay verification check:');
+          print('  - razorpay_payment_id: ${qp['razorpay_payment_id']}');
+          print('  - razorpay_signature: ${qp['razorpay_signature']}');
+          print('  - payment_id: ${qp['payment_id']}');
+          print('  - Will close webview: ${isSuccess || isFailed || isCancel}');
+        }
       }
       // Close browser if our domain reports a terminal state OR token success, even if path is non-standard
       // Also close if it's a callback path with clear status
       if (((isSuccess || isFailed || isCancel) && isOurDomain) || 
           (isCallbackPath && isOurDomain && (isSuccess || isFailed || isCancel))) {
         _canRedirect = false;
-        close();
+        
+        // FIXED: Add delay for subscription payments to let user see the payment interface
+        if (fromPage == "subscription" && isSuccess) {
+          // Delay closure for subscription payments to improve UX
+          Future.delayed(const Duration(seconds: 2), () {
+            close();
+          });
+        } else {
+          close();
+        }
       }
 
       if (isSuccess) {

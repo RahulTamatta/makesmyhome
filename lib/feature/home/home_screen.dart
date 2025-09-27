@@ -211,9 +211,33 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Subscription Section
                           GetBuilder<SubscriptionController>(
                             builder: (subscriptionController) {
-                              return subscriptionController.subscriptions.isNotEmpty
-                                  ? SubscriptionView()
-                                  : const SizedBox();
+                              debugPrint('HomeScreen: Subscription section - subscriptions count: ${subscriptionController.subscriptions.length}, isNotEmpty: ${subscriptionController.subscriptions.isNotEmpty}');
+                              
+                              if (subscriptionController.subscriptions.isNotEmpty) {
+                                debugPrint('HomeScreen: Showing subscription section with ${subscriptionController.subscriptions.length} items');
+                                return Container(
+                                  constraints: BoxConstraints(minHeight: 200), // Ensure minimum height
+                                  child: SubscriptionView(),
+                                );
+                              } else if (subscriptionController.userSubscriptionStatus.isNotEmpty) {
+                                debugPrint('HomeScreen: User has subscription data but no subscription objects - showing loading state');
+                                return Container(
+                                  height: 200,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        CircularProgressIndicator(),
+                                        SizedBox(height: 16),
+                                        Text('Loading subscriptions...'),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                debugPrint('HomeScreen: Hiding subscription section - no subscriptions');
+                                return const SizedBox();
+                              }
                             },
                           ),
                           

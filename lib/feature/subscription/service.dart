@@ -226,7 +226,7 @@ class SubscriptionService {
   // This matches the backend apilist method that checks user_id to determine subscribed status
   Future<List<Subscription>> getSubscriptionsWithUserContext() async {
     try {
-      // Prepare request body based on user authentication status
+      // FIXED: Ensure user_id is always sent when user is logged in
       final Map<String, dynamic> body = {};
 
       try {
@@ -241,6 +241,12 @@ class SubscriptionService {
           } else {
             debugPrint(
                 '[SUBS_WITH_CTX][WARN] User logged in but no user_id found');
+            // FIXED: Try to get user ID from alternative source
+            final guestId = Get.find<SplashController>().getGuestId();
+            if (guestId.isNotEmpty) {
+              body['user_id'] = guestId;
+              debugPrint('[SUBS_WITH_CTX][INFO] Using guest ID: $guestId');
+            }
           }
         } else {
           debugPrint(

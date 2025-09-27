@@ -16,6 +16,13 @@ class AllSubscriptionsScreen extends StatelessWidget {
       appBar: CustomAppBar(
         title: 'All Subscriptions'.tr,
         onBackPressed: () => Get.back(),
+        actionWidget: IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () async {
+            final controller = Get.find<SubscriptionController>();
+            await controller.refreshSubscriptionStatus();
+          },
+        ),
       ),
       body: GetBuilder<SubscriptionController>(
         builder: (subscriptionController) {
@@ -216,25 +223,31 @@ class AllSubscriptionsScreen extends StatelessWidget {
                   final bool isSubscribed = subscriptionCtrl
                       .isUserSubscribed(subscription.subscriptionId ?? 0);
                   
-                  debugPrint('[ALL_SUBS_BUTTON] Subscription ID: ${subscription.subscriptionId}, isSubscribed: $isSubscribed, subscribed field: ${subscription.subscribed}');
+                  // FIXED: Also check the subscription object's subscribed field
+                  final bool isActuallySubscribed = isSubscribed || (subscription.subscribed ?? false);
+                  
+                  debugPrint('[ALL_SUBS_BUTTON] Subscription ID: ${subscription.subscriptionId}, isSubscribed: $isSubscribed, subscribed field: ${subscription.subscribed}, final status: $isActuallySubscribed');
+                  debugPrint('[ALL_SUBS_BUTTON] Subscription Name: ${subscription.name}');
                   
                   return CustomButton(
-                    buttonText: isSubscribed
+                    buttonText: isActuallySubscribed
                             ? 'Subscribed'.tr
                             : 'Subscribe Now'.tr,
                     fontSize: Dimensions.fontSizeSmall,
                     height: 35,
-                    backgroundColor: isSubscribed
+                    backgroundColor: isActuallySubscribed
                         ? Colors.green
                         : Colors.red,
                     onPressed: () {
-                      if (isSubscribed) {
+                      if (isActuallySubscribed) {
                         debugPrint('[ALL_SUBS_BUTTON] User already subscribed to ${subscription.subscriptionId}');
                         customSnackBar('already_subscribed'.tr,
                             type: ToasterMessageType.info,
                             showDefaultSnackBar: false);
                         return;
                       }
+                      print("DEBUG: *** MAIN BUTTON CLICKED - SHOULD ONLY GO TO RAZORPAY ***");
+                      print("DEBUG: *** SUBSCRIPTION ID: ${subscription.subscriptionId} ***");
                       debugPrint('[ALL_SUBS_BUTTON] Initiating payment for ${subscription.subscriptionId}');
                       _initiatePaymentFlow(context, subscription);
                     },
@@ -249,6 +262,8 @@ class AllSubscriptionsScreen extends StatelessWidget {
   }
 
   void _showSubscriptionDialog(BuildContext context, dynamic subscription) {
+    print("DEBUG: *** _showSubscriptionDialog called ***");
+    print("DEBUG: *** Showing confirmation dialog ***");
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -275,6 +290,7 @@ class AllSubscriptionsScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
+                print("DEBUG: *** User clicked CONFIRM in subscription dialog ***");
                 Get.back();
                 _showPayWithMakeMyHomeDialog(context, subscription);
               },
@@ -287,10 +303,12 @@ class AllSubscriptionsScreen extends StatelessWidget {
   }
 
   void _showPayWithMakeMyHomeDialog(BuildContext context, dynamic subscription) {
+    print("DEBUG: *** _showPayWithMakeMyHomeDialog called ***");
+    print("DEBUG: *** Showing payment method dialog ***");
     final String rawPrice = subscription.price?.toString() ?? '';
     final double amount =
         double.tryParse(rawPrice) ??
-            double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
+            double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\\\.]'), '')) ??
             0.0;
     showDialog(
       context: context,
@@ -302,7 +320,16 @@ class AllSubscriptionsScreen extends StatelessWidget {
           children: [
             Text('${'total_amount'.tr}: ${PriceConverter.convertPrice(amount)}'),
             const SizedBox(height: 8),
-            Text('pay_using_make_my_home'.tr, style: robotoMedium),
+            Text('Choose payment method:', style: robotoMedium),
+            const SizedBox(height: 12),
+            // FIXED: Add Razorpay option
+            Row(
+              children: [
+                Icon(Icons.payment, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                Text('Pay with Razorpay', style: robotoRegular),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -310,9 +337,12 @@ class AllSubscriptionsScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: (){
               Get.back();
-              _processSubscription(subscription);
+              // FIXED: Force Razorpay payment instead of direct subscription
+              print("DEBUG: *** User clicked Pay with Razorpay button ***");
+              print("DEBUG: *** About to call _initiateRazorpayPayment ***");
+              _initiateRazorpayPayment(subscription);
             },
-            child: Text('pay_now'.tr),
+            child: Text('pay_with_razorpay'.tr),
           ),
         ],
       ),
@@ -320,6 +350,9 @@ class AllSubscriptionsScreen extends StatelessWidget {
   }
 
   void _initiatePaymentFlow(BuildContext context, subscription) {
+    print("DEBUG: *** _initiatePaymentFlow method called ***");
+    print("DEBUG: *** This should show dialog, then go to Razorpay ***");
+    
     final String rawPrice = subscription.price?.toString() ?? '';
     final double amount =
         double.tryParse(rawPrice) ??
@@ -338,7 +371,12 @@ class AllSubscriptionsScreen extends StatelessWidget {
     _showSubscriptionDialog(context, subscription);
   }
 
-  void _processSubscription(subscription) {
+
+  void _initiateRazorpayPayment(subscription) {
+    print("DEBUG: *** _initiateRazorpayPayment method called ***");
+    print("DEBUG: *** This should open Razorpay, not direct subscription ***");
+    
+    // FIXED: Add authentication check
     final auth = Get.find<AuthController>();
     if (!auth.isLoggedIn()) {
       Get.toNamed(
@@ -351,17 +389,16 @@ class AllSubscriptionsScreen extends StatelessWidget {
     final String rawPrice = subscription.price?.toString() ?? '';
     final double amount =
         double.tryParse(rawPrice) ??
-            double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\.]'), '')) ??
+            double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
             0.0;
 
-    print("DEBUG: Starting subscription payment process");
+    print("DEBUG: Starting Razorpay payment process");
     print("DEBUG: User ID: $userId");
     print("DEBUG: Raw Price: $rawPrice");
     print("DEBUG: Amount: $amount");
     print("DEBUG: Subscription ID: ${subscription.id}");
-    print("DEBUG: Platform is web: ${GetPlatform.isWeb}");
 
-    // Validate required data
+    // FIXED: Add validation before opening Razorpay
     if (userId.toString().trim().isEmpty) {
       customSnackBar('please_login_first'.tr,
           showDefaultSnackBar: false, type: ToasterMessageType.error);
@@ -379,19 +416,6 @@ class AllSubscriptionsScreen extends StatelessWidget {
           showDefaultSnackBar: false, type: ToasterMessageType.error);
       return;
     }
-
-    // Directly initiate Razorpay payment
-    _initiateRazorpayPayment(subscription);
-  }
-
-  void _initiateRazorpayPayment(subscription) {
-    String userId = Get.find<UserController>().userInfoModel?.id ??
-        Get.find<SplashController>().getGuestId();
-    final String rawPrice = subscription.price?.toString() ?? '';
-    final double amount =
-        double.tryParse(rawPrice) ??
-            double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
-            0.0;
 
     // Build callback like working flows
     String platform = GetPlatform.isWeb ? "web" : "app";
@@ -420,10 +444,35 @@ class AllSubscriptionsScreen extends StatelessWidget {
 
     try {
       String accessToken = base64Url.encode(utf8.encode(userId.toString()));
+      
+      // Validate required parameters
+      String subscriptionId = (subscription.id ?? '').toString();
+      if (subscriptionId.isEmpty) {
+        print("ERROR: Subscription ID is empty");
+        customSnackBar('invalid_subscription_id'.tr,
+            showDefaultSnackBar: false, type: ToasterMessageType.error);
+        return;
+      }
+      
+      if (userId.isEmpty) {
+        print("ERROR: User ID is empty");
+        customSnackBar('user_not_logged_in'.tr,
+            showDefaultSnackBar: false, type: ToasterMessageType.error);
+        return;
+      }
+      
+      print("DEBUG: Subscription ID: $subscriptionId");
+      print("DEBUG: User ID: $userId");
+      print("DEBUG: Amount: $amount");
+      print("DEBUG: Subscription object ID: ${subscription.id}");
+      print("DEBUG: Subscription object subscriptionId: ${subscription.subscriptionId}");
+      
+      // FIXED: Use correct parameter names that backend expects
+      // Backend expects 'package_id' (subscription UUID) and 'provider_id' (user UUID)
       final Map<String, String> params = {
         'payment_method': 'razor_pay',
-        'provider_id': userId.toString(),
-        'package_id': (subscription.id ?? '').toString(),
+        'provider_id': userId.toString(), // User ID as provider_id (backend expects UUID)
+        'package_id': subscriptionId, // Subscription ID as package_id (backend expects UUID)
         'access_token': accessToken,
         'amount': amount.toString(),
         'payment_platform': platform,
@@ -464,11 +513,26 @@ class AllSubscriptionsScreen extends StatelessWidget {
       final url = '${AppConstants.baseUrl}/payment/subscription?$query';
 
       print("DEBUG: Subscription Payment URL: $url");
+      print("DEBUG: Payment Parameters:");
+      params.forEach((key, value) {
+        print("  $key: $value");
+      });
+      
+      // FIXED: Add validation before opening payment gateway
+      if (!url.contains('package_id=') || !url.contains('provider_id=')) {
+        print("ERROR: Missing required parameters in payment URL");
+        customSnackBar('payment_parameters_missing'.tr,
+            showDefaultSnackBar: false, type: ToasterMessageType.error);
+        return;
+      }
 
       if (GetPlatform.isWeb) {
+        print("DEBUG: *** OPENING WEB PAYMENT ***");
         printLog("subscription_payment_url_web:$url");
         html.window.open(url, "_self");
       } else {
+        print("DEBUG: *** OPENING MOBILE PAYMENT WEBVIEW ***");
+        print("DEBUG: *** About to navigate to PaymentScreen ***");
         printLog("subscription_payment_url_mobile:$url");
         Get.to(() => PaymentScreen(
               url: url,
@@ -476,6 +540,7 @@ class AllSubscriptionsScreen extends StatelessWidget {
               subscriptionId: (subscription.id ?? '').toString(),
               subscriptionAmount: amount.toString(),
             ));
+        print("DEBUG: *** PaymentScreen navigation initiated ***");
       }
     } catch (e) {
       print("ERROR: Failed to initiate payment: $e");

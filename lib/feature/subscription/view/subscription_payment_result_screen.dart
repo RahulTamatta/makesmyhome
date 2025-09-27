@@ -39,6 +39,13 @@ class _SubscriptionPaymentResultScreenState
   }
 
   void _handlePaymentResult() async {
+    debugPrint('[SUBSCRIBE][RESULT] SubscriptionPaymentResultScreen initialized with:');
+    debugPrint('[SUBSCRIBE][RESULT]   - flag: ${widget.flag}');
+    debugPrint('[SUBSCRIBE][RESULT]   - subscriptionId: ${widget.subscriptionId}');
+    debugPrint('[SUBSCRIBE][RESULT]   - amount: ${widget.amount}');
+    debugPrint('[SUBSCRIBE][RESULT]   - transactionId: ${widget.transactionId}');
+    debugPrint('[SUBSCRIBE][RESULT]   - paymentMethod: ${widget.paymentMethod}');
+    
     if (widget.flag == 'success') {
       if (mounted) {
         setState(() {
@@ -55,8 +62,9 @@ class _SubscriptionPaymentResultScreenState
         debugPrint('[SUBSCRIBE][RESULT] Processing success');
         debugPrint('[SUBSCRIBE][RESULT] user_id=$userIdStr subId=${widget.subscriptionId} amount=${widget.amount} txn=${widget.transactionId}');
 
-        // Always use 'makemyhome' for subscription POST as per spec
-        const String paymentMethod = 'makemyhome';
+        // FIXED: Use actual payment method from widget instead of hardcoded 'makemyhome'
+        final String paymentMethod = widget.paymentMethod ?? 'makemyhome';
+        debugPrint('[SUBSCRIBE][RESULT] Using payment method: $paymentMethod (from widget: ${widget.paymentMethod})');
 
         if ((widget.subscriptionId ?? '').isNotEmpty && userIdStr.isNotEmpty) {
           final double amount = double.tryParse(widget.amount ?? '0') ?? 0.0;
@@ -78,6 +86,13 @@ class _SubscriptionPaymentResultScreenState
             }
 
             if ((subIdInt ?? 0) > 0) {
+              debugPrint('[SUBSCRIBE][RESULT] About to call subscribeUser API with:');
+              debugPrint('[SUBSCRIBE][RESULT]   - subscriptionId: $subIdInt');
+              debugPrint('[SUBSCRIBE][RESULT]   - amount: $amount');
+              debugPrint('[SUBSCRIBE][RESULT]   - transactionId: ${widget.transactionId}');
+              debugPrint('[SUBSCRIBE][RESULT]   - paymentMethod: $paymentMethod');
+              debugPrint('[SUBSCRIBE][RESULT]   - user_id: $userIdStr');
+              
               await controller.subscribeUser(
                 subscriptionId: subIdInt!,
                 amount: amount,

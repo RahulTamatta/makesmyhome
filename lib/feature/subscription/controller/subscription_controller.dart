@@ -13,8 +13,10 @@ class SubscriptionController extends GetxController {
   var subscriptions = <Subscription>[].obs;
   var userSubscriptions = <Subscription>[].obs;
   var isLoading = false.obs;
-  // Map of subscriptionId -> isActive
   var userSubscriptionStatus = <int, bool>{}.obs;
+  
+  // FIXED: Track when we have fresh user subscription data
+  bool _hasUserSubscriptionData = false;
 
   @override
   void onInit() {
@@ -24,24 +26,36 @@ class SubscriptionController extends GetxController {
   
   // Initialize subscriptions with cache loading
   Future<void> _initializeSubscriptions() async {
-    // Load cached subscription status first for immediate UI feedback
-    if (Get.find<AuthController>().isLoggedIn()) {
-      await _loadSubscriptionStatusFromCache();
-    }
-    
-    // Then fetch fresh data from server
-    await fetchSubscriptions();
-    
-    // Fetch user subscriptions if logged in
+    // FIXED: Fetch user subscriptions first to get accurate status
     if (Get.find<AuthController>().isLoggedIn()) {
       await fetchUserSubscriptions();
     }
+    
+    // Then fetch all subscriptions (this will preserve the user subscription status)
+    await fetchSubscriptions();
   }
 
-  Future<void> fetchSubscriptions() async {
+  Future<void> fetchSubscriptions({bool forceRefresh = false}) async {
     isLoading(true);
     try {
       debugPrint('[FETCH_SUBS][CTRL] Starting subscription fetch...');
+      
+      // FIXED: Store current subscription statuses before fetching
+      final currentStatuses = Map<int, bool>.from(userSubscriptionStatus);
+      debugPrint('[FETCH_SUBS][CTRL] Preserving ${currentStatuses.length} current subscription statuses');
+      
+      // FIXED: If we have fresh user subscription data and subscriptions list, skip unnecessary fetch
+      if (_hasUserSubscriptionData && currentStatuses.isNotEmpty && subscriptions.isNotEmpty && !forceRefresh) {
+        debugPrint('[FETCH_SUBS][CTRL] Skipping fetch - already have fresh user subscription data and subscription list');
+        isLoading(false);
+        return;
+      }
+      
+      // FIXED: If we have fresh user subscription data, prioritize it
+      if (_hasUserSubscriptionData && currentStatuses.isNotEmpty) {
+        debugPrint('[FETCH_SUBS][CTRL] Using fresh user subscription data - will preserve all statuses');
+      }
+      
       final List<Subscription> fetchedSubscriptions =
           await subscriptionService.getSubscriptionsWithUserContext();
 
@@ -54,8 +68,18 @@ class SubscriptionController extends GetxController {
         final String id = (sub.subscriptionId ?? sub.id ?? '').toString();
         if (id.isNotEmpty && !seenIds.contains(id)) {
           seenIds.add(id);
-          uniqueSubscriptions.add(sub);
-          debugPrint('[FETCH_SUBS][CTRL] Added subscription ID: ${sub.subscriptionId}, Name: ${sub.name}, Subscribed: ${sub.subscribed}');
+          
+          // FIXED: Preserve existing subscription status if available
+          final subscriptionId = sub.subscriptionId;
+          if (subscriptionId != null && currentStatuses.containsKey(subscriptionId)) {
+            final preservedStatus = currentStatuses[subscriptionId]!;
+            final updatedSub = sub.copyWith(subscribed: preservedStatus);
+            uniqueSubscriptions.add(updatedSub);
+            debugPrint('[FETCH_SUBS][CTRL] Added subscription ID: $subscriptionId, Name: ${sub.name}, Preserved Status: $preservedStatus');
+          } else {
+            uniqueSubscriptions.add(sub);
+            debugPrint('[FETCH_SUBS][CTRL] Added subscription ID: ${sub.subscriptionId}, Name: ${sub.name}, New Status: ${sub.subscribed}');
+          }
         } else {
           debugPrint('[FETCH_SUBS][CTRL] Skipped duplicate subscription ID: $id');
         }
@@ -63,9 +87,92 @@ class SubscriptionController extends GetxController {
 
       subscriptions.assignAll(uniqueSubscriptions);
       debugPrint('[FETCH_SUBS][CTRL] Final count: ${uniqueSubscriptions.length} unique subscriptions');
-      _updateUserSubscriptionStatus();
+      debugPrint('[FETCH_SUBS][CTRL] Subscription objects: ${uniqueSubscriptions.map((s) => '${s.name} (ID: ${s.subscriptionId})').join(', ')}');
+      
+      // FIXED: If API failed but we have user subscription data, create fallback subscriptions
+      if (uniqueSubscriptions.isEmpty && userSubscriptions.isNotEmpty) {
+        debugPrint('[FETCH_SUBS][CTRL] API failed but we have user subscriptions, creating fallback list');
+        final fallbackSubscriptions = <Subscription>[];
+        
+        for (final userSub in userSubscriptions) {
+          if (userSub.subscriptionId != null) {
+            // Create a basic subscription object from user subscription data
+            final fallbackSub = Subscription(
+              subscriptionId: userSub.subscriptionId,
+              id: userSub.id,
+              name: userSub.name ?? 'Subscription ${userSub.subscriptionId}',
+              description: userSub.description,
+              price: userSub.price,
+              image: userSub.image,
+              status: 'active',
+              duration: userSub.duration,
+              subscribed: true, // User has this subscription
+              isActive: 1,
+            );
+            fallbackSubscriptions.add(fallbackSub);
+            debugPrint('[FETCH_SUBS][CTRL] Created fallback subscription: ${fallbackSub.name}');
+          }
+        }
+        
+        if (fallbackSubscriptions.isNotEmpty) {
+          subscriptions.assignAll(fallbackSubscriptions);
+          debugPrint('[FETCH_SUBS][CTRL] Using ${fallbackSubscriptions.length} fallback subscriptions');
+          debugPrint('[FETCH_SUBS][CTRL] Fallback subscription objects: ${fallbackSubscriptions.map((s) => '${s.name} (ID: ${s.subscriptionId})').join(', ')}');
+        }
+      }
+      
+      // FIXED: Only update status for truly new subscriptions, preserve existing ones
+      _updateUserSubscriptionStatusPreserving(currentStatuses);
+      
+      // Force UI update
+      subscriptions.refresh();
+      userSubscriptionStatus.refresh();
+      update();
+      
+      debugPrint('[FETCH_SUBS][CTRL] UI refreshed after subscription update');
     } catch (e) {
       debugPrint('[FETCH_SUBS][CTRL][ERR] Error fetching subscriptions: $e');
+      
+      // FIXED: If API failed but we have user subscription data, create fallback subscriptions
+      if (subscriptions.isEmpty && userSubscriptions.isNotEmpty) {
+        debugPrint('[FETCH_SUBS][CTRL][ERR] API failed but we have user subscriptions, creating fallback list');
+        final fallbackSubscriptions = <Subscription>[];
+        
+        for (final userSub in userSubscriptions) {
+          if (userSub.subscriptionId != null) {
+            // Create a basic subscription object from user subscription data
+            final fallbackSub = Subscription(
+              subscriptionId: userSub.subscriptionId,
+              id: userSub.id,
+              name: userSub.name ?? 'Subscription ${userSub.subscriptionId}',
+              description: userSub.description,
+              price: userSub.price,
+              image: userSub.image,
+              status: 'active',
+              duration: userSub.duration,
+              subscribed: true, // User has this subscription
+              isActive: 1,
+            );
+            fallbackSubscriptions.add(fallbackSub);
+            debugPrint('[FETCH_SUBS][CTRL][ERR] Created fallback subscription: ${fallbackSub.name}');
+          }
+        }
+        
+        if (fallbackSubscriptions.isNotEmpty) {
+          subscriptions.assignAll(fallbackSubscriptions);
+          debugPrint('[FETCH_SUBS][CTRL][ERR] Using ${fallbackSubscriptions.length} fallback subscriptions');
+          
+          // Update status map with fallback data
+          _updateUserSubscriptionStatusPreserving(Map<int, bool>.from(userSubscriptionStatus));
+        }
+      }
+      
+      // Force UI update even on error
+      subscriptions.refresh();
+      userSubscriptionStatus.refresh();
+      update();
+      
+      debugPrint('[FETCH_SUBS][CTRL] UI refreshed after error handling');
       
       // On web, CORS errors are common during development
       if (kIsWeb && e.toString().contains('Failed to fetch')) {
@@ -87,22 +194,31 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  // Build map of subscriptionId -> subscribed for quick lookup
-  void _updateUserSubscriptionStatus() {
-    debugPrint('[UPDATE_STATUS][CTRL] Updating user subscription status map...');
-    userSubscriptionStatus.clear();
+  // Build map of subscriptionId -> subscribed for quick lookup (preserving existing statuses)
+  void _updateUserSubscriptionStatusPreserving(Map<int, bool> currentStatuses) {
+    debugPrint('[UPDATE_STATUS][CTRL] Updating user subscription status map (preserving existing)...');
+    
+    // First, restore all existing statuses
+    for (final entry in currentStatuses.entries) {
+      userSubscriptionStatus[entry.key] = entry.value;
+      debugPrint('[UPDATE_STATUS][CTRL] Preserved subscription ID ${entry.key}: subscribed=${entry.value}');
+    }
+    
+    // Then, add any new subscriptions that weren't in the existing map
     for (final sub in subscriptions) {
-      if (sub.subscriptionId != null) {
+      if (sub.subscriptionId != null && !currentStatuses.containsKey(sub.subscriptionId)) {
         final isSubscribed = sub.subscribed ?? false;
         userSubscriptionStatus[sub.subscriptionId!] = isSubscribed;
-        debugPrint('[UPDATE_STATUS][CTRL] Subscription ID ${sub.subscriptionId}: subscribed=$isSubscribed');
+        debugPrint('[UPDATE_STATUS][CTRL] Added new subscription ID ${sub.subscriptionId}: subscribed=$isSubscribed');
       }
     }
+    
     debugPrint('[UPDATE_STATUS][CTRL] Status map updated with ${userSubscriptionStatus.length} entries');
     
     // Persist subscription status to local storage for app reload scenarios
     _saveSubscriptionStatusToCache();
   }
+
 
   bool isUserSubscribed(int subscriptionId) {
     final isSubscribed = userSubscriptionStatus[subscriptionId] ?? false;
@@ -120,6 +236,25 @@ class SubscriptionController extends GetxController {
     userSubscriptionStatus.clear();
     _clearSubscriptionStatusCache();
     update();
+  }
+
+  // FIXED: Manual refresh method to force update subscription status
+  Future<void> refreshSubscriptionStatus() async {
+    debugPrint('[REFRESH][CTRL] Manually refreshing subscription status...');
+    try {
+      // Refresh both subscription lists
+      await fetchSubscriptions();
+      await fetchUserSubscriptions();
+      
+      // Force UI update
+      subscriptions.refresh();
+      userSubscriptionStatus.refresh();
+      update();
+      
+      debugPrint('[REFRESH][CTRL] Subscription status refreshed successfully');
+    } catch (e) {
+      debugPrint('[REFRESH][CTRL][ERR] Failed to refresh: $e');
+    }
   }
   
   // Save subscription status to local cache
@@ -139,35 +274,6 @@ class SubscriptionController extends GetxController {
     }
   }
   
-  // Load subscription status from local cache
-  Future<void> _loadSubscriptionStatusFromCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = Get.find<UserController>().userInfoModel?.id;
-      
-      if (userId != null && userId.isNotEmpty) {
-        final cacheKey = 'subscription_status_$userId';
-        final statusJson = prefs.getString(cacheKey);
-        
-        if (statusJson != null) {
-          final Map<String, dynamic> statusMap = jsonDecode(statusJson);
-          userSubscriptionStatus.clear();
-          
-          statusMap.forEach((key, value) {
-            final subscriptionId = int.tryParse(key);
-            if (subscriptionId != null) {
-              userSubscriptionStatus[subscriptionId] = value as bool;
-            }
-          });
-          
-          debugPrint('[CACHE][LOAD] Loaded ${userSubscriptionStatus.length} subscription statuses from cache');
-          update(); // Trigger UI update
-        }
-      }
-    } catch (e) {
-      debugPrint('[CACHE][LOAD][ERR] Failed to load subscription status from cache: $e');
-    }
-  }
   
   // Clear subscription status cache
   Future<void> _clearSubscriptionStatusCache() async {
@@ -217,23 +323,63 @@ class SubscriptionController extends GetxController {
       debugPrint(
           '[MY_SUBS][CTRL] Deduplicated ${data.length} -> ${uniqueSubscriptions.length} subscriptions');
 
-      // Update the main subscriptions list with active status
+      // FIXED: Update subscription status based on user's active subscriptions
       final activeSubIds = uniqueSubscriptions
-          .where((sub) => sub.status?.toLowerCase() == 'active')
+          .where((sub) => (sub.status?.toLowerCase() == 'active' || 
+                          sub.status == null)) // Handle null status as active
           .map((sub) => sub.subscriptionId)
           .toSet();
 
-      // Update the isActive status in the main subscriptions list
-      for (var i = 0; i < subscriptions.length; i++) {
-        final sub = subscriptions[i];
-        if (activeSubIds.contains(sub.subscriptionId)) {
-          subscriptions[i] = sub.copyWith(isActive: 1);
+      debugPrint('[MY_SUBS][CTRL] Active subscription IDs: $activeSubIds');
+
+      // Update userSubscriptionStatus map with active subscriptions
+      for (final subId in activeSubIds) {
+        if (subId != null) {
+          userSubscriptionStatus[subId] = true;
+          debugPrint('[MY_SUBS][CTRL] Marked subscription $subId as subscribed=true');
         }
       }
+
+      // Update the main subscriptions list with subscribed status
+      for (var i = 0; i < subscriptions.length; i++) {
+        final sub = subscriptions[i];
+        if (sub.subscriptionId != null) {
+          final isActive = activeSubIds.contains(sub.subscriptionId);
+          subscriptions[i] = sub.copyWith(subscribed: isActive, isActive: isActive ? 1 : 0);
+          debugPrint('[MY_SUBS][CTRL] Updated subscription ${sub.subscriptionId} to subscribed=$isActive');
+        }
+      }
+
+      // Force UI update
+      subscriptions.refresh();
+      userSubscriptionStatus.refresh();
+      update();
+      
+      debugPrint('[FETCH_SUBS][CTRL] UI refreshed after subscription update');
+      
     } catch (e) {
       debugPrint('[MY_SUBS][CTRL][ERR] $e');
     } finally {
       isLoading(false);
+    }
+  }
+
+  // Manual refresh method for testing
+  Future<void> refreshSubscriptions() async {
+    debugPrint('[REFRESH][CTRL] Manually refreshing subscription status...');
+    try {
+      // Force refresh both subscription lists
+      await fetchSubscriptions(forceRefresh: true);
+      await fetchUserSubscriptions();
+      
+      // Force UI update
+      subscriptions.refresh();
+      userSubscriptionStatus.refresh();
+      update();
+      
+      debugPrint('[REFRESH][CTRL] Manual refresh completed');
+    } catch (e) {
+      debugPrint('[REFRESH][CTRL][ERR] Manual refresh failed: $e');
     }
   }
 
@@ -248,6 +394,7 @@ class SubscriptionController extends GetxController {
       isLoading(true);
       debugPrint(
           '[SUBSCRIBE][CTRL] subscriptionId=$subscriptionId amount=$amount txn=$transactionId method=$paymentMethod user_id=$user_id');
+
       final success = await subscriptionService.subscribeToService(
         subscriptionId: subscriptionId,
         amount: amount,
@@ -271,14 +418,26 @@ class SubscriptionController extends GetxController {
           }
         }
         
-        // Trigger UI update
-        update();
+        // FIXED: Force UI update with proper state management
+        subscriptions.refresh(); // Notify observers of list change
+        userSubscriptionStatus.refresh(); // Notify observers of map change
+        update(); // Trigger GetBuilder update
         
         Get.snackbar('Success', 'Subscription added successfully!');
         
         // Refresh both lists to sync with backend
         await fetchSubscriptions();
         await fetchUserSubscriptions();
+        
+        // FIXED: Additional UI refresh after backend sync
+        subscriptions.refresh();
+        userSubscriptionStatus.refresh();
+        update();
+        
+        // FIXED: Extra delay and refresh to ensure UI consistency
+        await Future.delayed(const Duration(milliseconds: 500));
+        update();
+        
       } else {
         debugPrint('[SUBSCRIBE][CTRL] Subscribe API failed');
         Get.snackbar('Error', 'Failed to subscribe. Try again.');

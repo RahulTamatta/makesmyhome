@@ -1,0 +1,4 @@
+<?php $__env->startSection('title', __('Server Error')); ?>
+<?php $__env->startSection('code', '500'); ?>
+<?php $__env->startSection('message', __('Server Error')); ?>
+<?php /**PATH /home/housecraft/public_html/resources/views/errors/500.blade.php ENDPATH**/ ?>

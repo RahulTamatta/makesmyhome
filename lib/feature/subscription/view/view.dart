@@ -116,10 +116,13 @@ class SubscriptionView extends StatelessWidget {
     final controller = Get.find<SubscriptionController>();
 
     return Obx(() {
+      debugPrint('[SUBSCRIPTION_VIEW] Building - subscriptions count: ${controller.subscriptions.length}, isEmpty: ${controller.subscriptions.isEmpty}');
+      
       // if (controller.isLoading.value) {
       //   return const Center(child: CircularProgressIndicator());
       // }
       if (controller.subscriptions.isEmpty) {
+        debugPrint('[SUBSCRIPTION_VIEW] Subscriptions empty, hiding section');
         return Container(
           height: 20,
           width: 20,
@@ -267,12 +270,15 @@ class SubscriptionView extends StatelessWidget {
                               width: double.infinity,
                               child: GetBuilder<SubscriptionController>(
                                 builder: (subscriptionCtrl) {
-                                  final isSubscribed =
+                                  final isSubscribedFromMap =
                                       subscriptionCtrl.isUserSubscribed(
                                           sub.subscriptionId ?? 0);
+                                  
+                                  // FIXED: Check both sources of subscription status
+                                  final isSubscribed = isSubscribedFromMap || (sub.subscribed ?? false);
                                   final auth = Get.find<AuthController>();
 
-                                  debugPrint('[SUB_BUTTON][VIEW] Subscription ID: ${sub.subscriptionId}, isSubscribed: $isSubscribed, subscribed field: ${sub.subscribed}');
+                                  debugPrint('[SUB_BUTTON][VIEW] Subscription ID: ${sub.subscriptionId}, isSubscribedFromMap: $isSubscribedFromMap, subscribed field: ${sub.subscribed}, final status: $isSubscribed');
                                   
                                   return ElevatedButton(
                                     onPressed: () {
@@ -285,7 +291,9 @@ class SubscriptionView extends StatelessWidget {
                                           debugPrint('[SUB_BUTTON][VIEW] User not logged in, redirecting to sign in');
                                           Get.toNamed(RouteHelper.signIn);
                                         } else {
-                                          _initiatePaymentFlow(context, sub);
+                                          // FIXED: Use direct Razorpay payment instead of dialogs
+                                          debugPrint('[SUB_BUTTON][VIEW] Opening Razorpay payment directly');
+                                          _initiateRazorpayPayment(sub);
                                         }
                                       }
                                     },
@@ -362,135 +370,7 @@ class SubscriptionView extends StatelessWidget {
     });
   }
 
-  void _showSubscriptionDialog(BuildContext context, dynamic subscription) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm subscription'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Subscription Name: ${subscription.name ?? ''}'),
-              const SizedBox(height: 8),
-              Text('Price: '
-                  '${PriceConverter.convertPrice(double.tryParse(subscription.price?.toString() ?? '0') ?? 0.0)}'),
-              const SizedBox(height: 8),
-              Text('Duration: ${subscription.duration} days'),
-              const SizedBox(height: 16),
-              const Text('confirm subscription message'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: Text('cancel'.tr),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                debugPrint('[PAYMENT_FLOW] Subscription confirmed, showing payment dialog');
-                Get.back();
-                _showPayWithMakeMyHomeDialog(context, subscription);
-              },
-              child: Text('confirm'.tr),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  void _showPayWithMakeMyHomeDialog(
-      BuildContext context, dynamic subscription) {
-    final String rawPrice = subscription.price?.toString() ?? '';
-    final double amount = double.tryParse(rawPrice) ??
-        double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
-        0.0;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('complete_payment'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-                '${'total_amount'.tr}: ${PriceConverter.convertPrice(amount)}'),
-            const SizedBox(height: 8),
-            Text('pay_using_make_my_home'.tr, style: robotoMedium),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
-          ElevatedButton(
-            onPressed: () {
-              debugPrint('[PAYMENT_FLOW] Pay now clicked, processing subscription');
-              Get.back();
-              _processSubscription(subscription);
-            },
-            child: Text('pay_now'.tr),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _initiatePaymentFlow(BuildContext context, dynamic subscription) {
-    final String rawPrice = subscription.price?.toString() ?? '';
-    final double amount = double.tryParse(rawPrice) ??
-        double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
-        0.0;
-    debugPrint('[PAYMENT_FLOW] Starting payment flow for subscription: ${subscription.name}');
-    debugPrint('[PAYMENT_FLOW] Raw price: $rawPrice, Parsed amount: $amount');
-    if (amount <= 0) {
-      debugPrint('[PAYMENT_FLOW] Invalid amount, showing error');
-      customSnackBar('invalid_subscription_amount'.tr,
-          showDefaultSnackBar: false, type: ToasterMessageType.error);
-      return;
-    }
-    debugPrint('[PAYMENT_FLOW] Showing subscription confirmation dialog');
-    _showSubscriptionDialog(context, subscription);
-  }
-
-  void _processSubscription(dynamic subscription) {
-    final auth = Get.find<AuthController>();
-    if (!auth.isLoggedIn()) {
-      Get.toNamed(
-          RouteHelper.getNotLoggedScreen(RouteHelper.checkout, "subscription"));
-      return;
-    }
-
-    final userId = Get.find<UserController>().userInfoModel?.id ??
-        Get.find<SplashController>().getGuestId();
-    final String rawPrice = subscription.price?.toString() ?? '';
-    final double amount = double.tryParse(rawPrice) ??
-        double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9\\.]'), '')) ??
-        0.0;
-
-    print(
-        "DEBUG: SubscriptionView._processSubscription -> userId: $userId, rawPrice: $rawPrice, amount: $amount, subId: ${subscription.id}");
-
-    // Basic validations
-    if (userId.toString().trim().isEmpty) {
-      customSnackBar('please_login_first'.tr,
-          showDefaultSnackBar: false, type: ToasterMessageType.error);
-      return;
-    }
-    if (amount <= 0) {
-      customSnackBar('invalid_subscription_amount'.tr,
-          showDefaultSnackBar: false, type: ToasterMessageType.error);
-      return;
-    }
-    if (subscription.id == null) {
-      customSnackBar('invalid_subscription_selected'.tr,
-          showDefaultSnackBar: false, type: ToasterMessageType.error);
-      return;
-    }
-
-    debugPrint('[PAYMENT_FLOW] Initiating Razorpay payment');
-    _initiateRazorpayPayment(subscription);
-  }
 
   void _initiateRazorpayPayment(dynamic subscription) {
     debugPrint('[PAYMENT_FLOW] Setting up Razorpay payment parameters');
