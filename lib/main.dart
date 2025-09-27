@@ -103,7 +103,9 @@ class _MyAppState extends State<MyApp> {
     Get.find<SplashController>().getConfigData().then((success) async {
       // Print token for debugging
       final token = Get.find<AuthController>().getUserToken();
-      debugPrint('Bearer Token: $token');
+      debugPrint('[moshi mosh] [APP_LOAD] bearer_token: $token');
+      final uid = Get.find<UserController>().userInfoModel?.id ?? '';
+      debugPrint('[moshi mosh] [APP_LOAD] user_id: $uid');
 
       if (Get.find<LocationController>().getUserAddress() != null) {
         AddressModel addressModel =
@@ -139,6 +141,53 @@ class _MyAppState extends State<MyApp> {
         Get.find<SplashController>().setGuestId(uuid);
       }
       _route();
+
+      // CRITICAL FIX: Handle web deep links for payment callbacks
+      if (kIsWeb) {
+        final uri = Uri.base; // current browser URL
+        debugPrint('[WEB_DEEPLINK] Current URL: ${uri.toString()}');
+        debugPrint('[WEB_DEEPLINK] URL Path: ${uri.path}');
+        debugPrint('[WEB_DEEPLINK] URL Query: ${uri.query}');
+        debugPrint('[WEB_DEEPLINK] Expected payment success path: ${RouteHelper.paymentSuccess}');
+        
+        // Check if we are on the payment success route
+        if (uri.path == RouteHelper.paymentSuccess || uri.path == '/payment/success') {
+          final fullRoute = uri.query.isNotEmpty
+              ? '${uri.path}?${uri.query}'
+              : uri.path;
+          
+          debugPrint('[WEB_DEEPLINK] ✅ Detected payment success callback: $fullRoute');
+          debugPrint('[WEB_DEEPLINK] Query parameters: ${uri.queryParameters}');
+          
+          // Navigate after first frame so GetX is fully initialized
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            try {
+              debugPrint('[WEB_DEEPLINK] Attempting to navigate to payment success route: $fullRoute');
+              Get.offAllNamed(fullRoute);
+              debugPrint('[WEB_DEEPLINK] ✅ Navigation successful');
+            } catch (e) {
+              debugPrint('[WEB_DEEPLINK][ERR] Failed to navigate to deep link: $e');
+              // Fallback: try to extract parameters and navigate manually
+              try {
+                debugPrint('[WEB_DEEPLINK] Trying fallback navigation with parameters');
+                Get.offAllNamed(RouteHelper.paymentSuccess, parameters: Map.fromEntries(uri.queryParameters.entries));
+                debugPrint('[WEB_DEEPLINK] ✅ Fallback navigation successful');
+              } catch (fallbackError) {
+                debugPrint('[WEB_DEEPLINK][ERR] Fallback navigation failed: $fallbackError');
+                // Last resort: try direct route call
+                try {
+                  debugPrint('[WEB_DEEPLINK] Trying direct route navigation');
+                  Get.offAllNamed('/payment/success', parameters: Map.fromEntries(uri.queryParameters.entries));
+                } catch (directError) {
+                  debugPrint('[WEB_DEEPLINK][ERR] Direct navigation failed: $directError');
+                }
+              }
+            }
+          });
+        } else {
+          debugPrint('[WEB_DEEPLINK] Not a payment success route, continuing normal flow');
+        }
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
 import 'package:makesmyhome/helper/payment_guard.dart';
+import 'package:makesmyhome/feature/subscription/controller/subscription_controller.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
@@ -514,8 +515,8 @@ class MyInAppBrowser extends InAppBrowser {
             fromPage: fromPage,
           ));
         } else if (fromPage == "subscription") {
-          print("=== SUBSCRIPTION PAYMENT SUCCESS ===");
-          print("DEBUG: Payment success callback URL: $url");
+          print("\x1B[32m=== SUBSCRIPTION PAYMENT SUCCESS ===\x1B[0m");
+          print("\x1B[32mDEBUG: Payment success callback URL: $url\x1B[0m");
 
           // Attempt to collect values from callback
           final String token = StringParser.parseString(url, "token");
@@ -541,15 +542,80 @@ class MyInAppBrowser extends InAppBrowser {
             }
           }
           
+          // CRITICAL FIX: Extract actual user_id from JWT token, not guest_id
+          String userId = '';
+          try {
+            userId = Get.find<UserController>().userInfoModel?.id ?? '';
+            if (userId.isEmpty) {
+              // Extract from JWT token
+              final authController = Get.find<AuthController>();
+              if (authController.isLoggedIn()) {
+                final token = authController.getUserToken();
+                if (token.isNotEmpty) {
+                  final parts = token.split('.');
+                  if (parts.length == 3) {
+                    final payload = parts[1];
+                    String normalizedPayload = payload;
+                    while (normalizedPayload.length % 4 != 0) {
+                      normalizedPayload += '=';
+                    }
+                    final decoded = utf8.decode(base64Decode(normalizedPayload));
+                    final Map<String, dynamic> tokenData = jsonDecode(decoded);
+                    userId = tokenData['sub']?.toString() ?? '';
+                    debugPrint('\x1B[32m[PAYMENT_SUCCESS] Extracted real user_id from token: $userId\x1B[0m');
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('[PAYMENT_SUCCESS][ERR] Failed to extract user_id: $e');
+            userId = Get.find<SplashController>().getGuestId();
+          }
+          
           // Additional debug for payment method extraction
-          debugPrint("DEBUG: Payment method extraction - path: $path");
+          debugPrint("\x1B[32mDEBUG: Payment method extraction - path: $path\x1B[0m");
           debugPrint("DEBUG: Query params method: ${qp['method']}");
           debugPrint("DEBUG: Query params payment_method: ${qp['payment_method']}");
-          debugPrint("DEBUG: Final paymentMethod: $paymentMethod");
+          debugPrint("\x1B[32mDEBUG: Final paymentMethod: $paymentMethod\x1B[0m");
 
-          print("DEBUG: Extracted token: $token");
-          print("DEBUG: Extracted transactionId: $transactionId");
-          print("DEBUG: Extracted paymentMethod: $paymentMethod");
+          print("\x1B[32mDEBUG: Extracted token: $token\x1B[0m");
+          print("\x1B[32mDEBUG: Extracted transactionId: $transactionId\x1B[0m");
+          print("\x1B[32mDEBUG: Extracted paymentMethod: $paymentMethod\x1B[0m");
+          print("\x1B[32mDEBUG: Using user_id: $userId\x1B[0m");
+          
+          // CRITICAL: Immediately call the subscription creation API
+          if (subscriptionId != null && subscriptionId!.isNotEmpty && userId.isNotEmpty) {
+            final int numericSubscriptionId = int.tryParse(subscriptionId!) ?? 26;
+            final double amount = double.tryParse(subscriptionAmount ?? '2499') ?? 2499.0;
+            
+            debugPrint('\x1B[32m[PAYMENT_SUCCESS] Immediately creating subscription in backend\x1B[0m');
+            debugPrint('\x1B[32m[PAYMENT_SUCCESS] subscription_id: $numericSubscriptionId, amount: $amount, user_id: $userId\x1B[0m');
+            
+            // Call the subscription controller to handle payment success immediately
+            try {
+              final subscriptionController = Get.find<SubscriptionController>();
+              
+              // Force update subscription status immediately
+              Future.microtask(() async {
+                try {
+                  await subscriptionController.forceUpdateSubscriptionStatus(numericSubscriptionId, true);
+                  debugPrint('\x1B[32m[PAYMENT_SUCCESS] Local status updated immediately\x1B[0m');
+                  
+                  // Then handle the full payment success flow
+                  await subscriptionController.handlePaymentSuccess(
+                    subscriptionId: numericSubscriptionId,
+                    userId: userId,
+                    transactionId: transactionId.isNotEmpty ? transactionId : 'razorpay_${DateTime.now().millisecondsSinceEpoch}',
+                  );
+                  debugPrint('\x1B[32m[PAYMENT_SUCCESS] Backend subscription creation completed\x1B[0m');
+                } catch (e) {
+                  debugPrint('[PAYMENT_SUCCESS][ERR] Error in payment success handling: $e');
+                }
+              });
+            } catch (e) {
+              debugPrint('[PAYMENT_SUCCESS][ERR] Error getting subscription controller: $e');
+            }
+          }
 
           Get.offNamed(RouteHelper.getPaymentWaitingRoute(
             fromPage: fromPage,
@@ -558,8 +624,7 @@ class MyInAppBrowser extends InAppBrowser {
               'amount': subscriptionAmount,
               'transactionId': transactionId,
               'paymentMethod': paymentMethod,
-              'user_id': Get.find<UserController>().userInfoModel?.id ??
-                  Get.find<SplashController>().getGuestId(),
+              'user_id': userId, // Use the correct user_id
               // Optionally pass raw token for server-side verification if needed later
               'token': token,
             },
