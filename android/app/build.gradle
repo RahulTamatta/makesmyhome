@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.sixamtech.demandium.user"
+    namespace "com.newmakesmyhome.user"
     compileSdkVersion 36
 //    compileSdkVersion flutter.compileSdkVersion
    
@@ -65,12 +65,17 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
     defaultConfig {
-        applicationId "com.sixamtech.demandium.user"
+        applicationId "com.newmakesmyhome.user"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        
+        // Optimize build performance
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
     }
 
     // Configure signing only if key.properties exists

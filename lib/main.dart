@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'feature/community/controller/community_controller.dart';
 import 'feature/subscription/controller/subscription_controller.dart';
 import 'feature/subscription/service.dart';
+import 'feature/autocare/controller/autocare_controller.dart';
 import 'helper/get_di.dart' as di;
 import 'utils/core_export.dart';
 
@@ -17,26 +18,36 @@ Future<void> main() async {
     await FlutterDownloader.initialize();
   }
   Get.lazyPut(() => CommunityController());
+  Get.lazyPut(() => AutocareController());
   setPathUrlStrategy();
-  if (GetPlatform.isWeb) {
-    await Firebase.initializeApp(
-        options: const FirebaseOptions(
-            apiKey: "AIzaSyDQqrye3mW1Ol6KsSb2XXeZPm5IlGou0F8",
-            authDomain: "housecraft-bd864.firebaseapp.com",
-            projectId: "housecraft-bd864",
-            storageBucket: "housecraft-bd864.firebasestorage.app",
-            messagingSenderId: "1024512016620",
-            appId: "1:1024512016620:web:3b3d20b9b4e9961605a5c9"));
-    await FacebookAuth.instance.webAndDesktopInitialize(
-      appId: "637072917840079",
-      cookie: true,
-      xfbml: true,
-      version: "v15.0",
-    );
-  } else {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  
+  // CRITICAL FIX: Check if Firebase is already initialized before initializing
+  try {
+    if (GetPlatform.isWeb) {
+      await Firebase.initializeApp(
+          options: const FirebaseOptions(
+              apiKey: "AIzaSyDQqrye3mW1Ol6KsSb2XXeZPm5IlGou0F8",
+              authDomain: "housecraft-bd864.firebaseapp.com",
+              projectId: "housecraft-bd864",
+              storageBucket: "housecraft-bd864.firebasestorage.app",
+              messagingSenderId: "1024512016620",
+              appId: "1:1024512016620:web:5ead8ae8621c656105a5c9"));
+      await FacebookAuth.instance.webAndDesktopInitialize(
+        appId: "637072917840079",
+        cookie: true,
+        xfbml: true,
+        version: "v15.0",
+      );
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // Firebase already initialized - this is fine, continue
+    if (kDebugMode) {
+      print('[FIREBASE_INIT] Firebase already initialized or initialization error: $e');
+    }
   }
 
   if (defaultTargetPlatform == TargetPlatform.android) {
@@ -148,44 +159,54 @@ class _MyAppState extends State<MyApp> {
         debugPrint('[WEB_DEEPLINK] Current URL: ${uri.toString()}');
         debugPrint('[WEB_DEEPLINK] URL Path: ${uri.path}');
         debugPrint('[WEB_DEEPLINK] URL Query: ${uri.query}');
-        debugPrint('[WEB_DEEPLINK] Expected payment success path: ${RouteHelper.paymentSuccess}');
-        
+        debugPrint(
+            '[WEB_DEEPLINK] Expected payment success path: ${RouteHelper.paymentSuccess}');
+
         // Check if we are on the payment success route
-        if (uri.path == RouteHelper.paymentSuccess || uri.path == '/payment/success') {
-          final fullRoute = uri.query.isNotEmpty
-              ? '${uri.path}?${uri.query}'
-              : uri.path;
-          
-          debugPrint('[WEB_DEEPLINK] ✅ Detected payment success callback: $fullRoute');
+        if (uri.path == RouteHelper.paymentSuccess ||
+            uri.path == '/payment/success') {
+          final fullRoute =
+              uri.query.isNotEmpty ? '${uri.path}?${uri.query}' : uri.path;
+
+          debugPrint(
+              '[WEB_DEEPLINK] ✅ Detected payment success callback: $fullRoute');
           debugPrint('[WEB_DEEPLINK] Query parameters: ${uri.queryParameters}');
-          
+
           // Navigate after first frame so GetX is fully initialized
           WidgetsBinding.instance.addPostFrameCallback((_) {
             try {
-              debugPrint('[WEB_DEEPLINK] Attempting to navigate to payment success route: $fullRoute');
+              debugPrint(
+                  '[WEB_DEEPLINK] Attempting to navigate to payment success route: $fullRoute');
               Get.offAllNamed(fullRoute);
               debugPrint('[WEB_DEEPLINK] ✅ Navigation successful');
             } catch (e) {
-              debugPrint('[WEB_DEEPLINK][ERR] Failed to navigate to deep link: $e');
+              debugPrint(
+                  '[WEB_DEEPLINK][ERR] Failed to navigate to deep link: $e');
               // Fallback: try to extract parameters and navigate manually
               try {
-                debugPrint('[WEB_DEEPLINK] Trying fallback navigation with parameters');
-                Get.offAllNamed(RouteHelper.paymentSuccess, parameters: Map.fromEntries(uri.queryParameters.entries));
+                debugPrint(
+                    '[WEB_DEEPLINK] Trying fallback navigation with parameters');
+                Get.offAllNamed(RouteHelper.paymentSuccess,
+                    parameters: Map.fromEntries(uri.queryParameters.entries));
                 debugPrint('[WEB_DEEPLINK] ✅ Fallback navigation successful');
               } catch (fallbackError) {
-                debugPrint('[WEB_DEEPLINK][ERR] Fallback navigation failed: $fallbackError');
+                debugPrint(
+                    '[WEB_DEEPLINK][ERR] Fallback navigation failed: $fallbackError');
                 // Last resort: try direct route call
                 try {
                   debugPrint('[WEB_DEEPLINK] Trying direct route navigation');
-                  Get.offAllNamed('/payment/success', parameters: Map.fromEntries(uri.queryParameters.entries));
+                  Get.offAllNamed('/payment/success',
+                      parameters: Map.fromEntries(uri.queryParameters.entries));
                 } catch (directError) {
-                  debugPrint('[WEB_DEEPLINK][ERR] Direct navigation failed: $directError');
+                  debugPrint(
+                      '[WEB_DEEPLINK][ERR] Direct navigation failed: $directError');
                 }
               }
             }
           });
         } else {
-          debugPrint('[WEB_DEEPLINK] Not a payment success route, continuing normal flow');
+          debugPrint(
+              '[WEB_DEEPLINK] Not a payment success route, continuing normal flow');
         }
       }
     }
@@ -211,8 +232,8 @@ class _MyAppState extends State<MyApp> {
                       SizedBox(height: 16),
                       Text('Loading configuration...'),
                       SizedBox(height: 8),
-                      Text('Please wait while we set up the app', 
-                           style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('Please wait while we set up the app',
+                          style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),

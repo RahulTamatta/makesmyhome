@@ -6,6 +6,8 @@ import 'package:makesmyhome/feature/booking/view/repeat_booking_details_screen.d
 import 'package:makesmyhome/feature/checkout/view/offline_payment_screen.dart';
 import 'package:makesmyhome/feature/checkout/view/payment_waiting_screen.dart';
 import 'package:makesmyhome/feature/community/view/community_screen.dart';
+import 'package:makesmyhome/feature/autocare/view/autocare_main_screen.dart';
+import 'package:makesmyhome/feature/autocare/view/autocare_packages_screen.dart';
 import 'package:makesmyhome/feature/provider/view/nearby_provider/near_by_provider_screen.dart';
 import 'package:makesmyhome/feature/subscription/view/subscription_payment_result_screen.dart';
 import 'package:makesmyhome/feature/subscription/view/subscription_screen.dart';
@@ -91,6 +93,8 @@ class RouteHelper {
   static const String community = '/community';
   static const String paymentWaiting = '/payment-waiting';
   static const String paymentSuccess = '/payment/success';
+  static const String autocare = '/autocare';
+  static const String autocarePackages = '/autocare/packages';
 
   static String getInitialRoute() => initial;
   static String getSplashRoute(NotificationBody? body, String? route) {
@@ -143,7 +147,8 @@ class RouteHelper {
           utf8.encode(jsonEncode(previousAddress.toJson()));
       addressData = base64Encode(encodedAddress);
     }
-    String finalRoute = '$pickMap?page=$page&route=${canRoute.toString()}&checkout=$isFromCheckout&zone=$zoneData&address=$addressData';
+    String finalRoute =
+        '$pickMap?page=$page&route=${canRoute.toString()}&checkout=$isFromCheckout&zone=$zoneData&address=$addressData';
     log("Generated route: $finalRoute");
     return finalRoute;
   }
@@ -408,6 +413,12 @@ class RouteHelper {
     GetPage(name: signUp, page: () => const SignUpScreen()),
     GetPage(name: community, page: () => const CommunityScreen()),
     GetPage(
+        name: autocare,
+        page: () => const AutocareMainScreen()),
+    GetPage(
+        name: autocarePackages,
+        page: () => const AutocarePackagesScreen()),
+    GetPage(
         name: accessLocation,
         page: () => AccessLocationScreen(
               fromHome: Get.parameters['page'] == 'home',
@@ -421,16 +432,18 @@ class RouteHelper {
           bool fromAddress = Get.parameters['page'] == 'add-address';
           ZoneModel? zoneData;
           AddressModel? addressData;
-          
+
           // Debug: Print all parameters
           if (kDebugMode) {
             print("PickMap route parameters: ${Get.parameters}");
           }
-          
+
           // Handle malformed URLs (missing parameter values)
-          if (Get.parameters.containsKey('zone') && Get.parameters['zone'] == null) {
+          if (Get.parameters.containsKey('zone') &&
+              Get.parameters['zone'] == null) {
             if (kDebugMode) {
-              print("Detected malformed URL with null zone parameter, redirecting to home");
+              print(
+                  "Detected malformed URL with null zone parameter, redirecting to home");
             }
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Get.offAllNamed(RouteHelper.getInitialRoute());
@@ -439,7 +452,9 @@ class RouteHelper {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          if (Get.parameters['zone'] != null && Get.parameters['zone'] != "" && Get.parameters['zone'] != "null") {
+          if (Get.parameters['zone'] != null &&
+              Get.parameters['zone'] != "" &&
+              Get.parameters['zone'] != "null") {
             try {
               List<int> category = base64Decode(Get.parameters['zone']!);
               zoneData = ZoneModel.fromJson(jsonDecode(utf8.decode(category)));
@@ -449,7 +464,9 @@ class RouteHelper {
               }
             }
           }
-          if (Get.parameters['address'] != null && Get.parameters['address'] != "" && Get.parameters['address'] != "null") {
+          if (Get.parameters['address'] != null &&
+              Get.parameters['address'] != "" &&
+              Get.parameters['address'] != "null") {
             try {
               List<int> address = base64Decode(Get.parameters['address']!);
               addressData =
@@ -1014,49 +1031,57 @@ class RouteHelper {
         page: () {
           debugPrint('[PAYMENT_SUCCESS_ROUTE] Payment success route accessed');
           debugPrint('[PAYMENT_SUCCESS_ROUTE] Parameters: ${Get.parameters}');
-          debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] raw_params: ${Get.parameters}');
-          
+          debugPrint(
+              '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] raw_params: ${Get.parameters}');
+
           // Extract payment data from URL parameters
           Map<String, dynamic>? paymentData;
           String? token = Get.parameters['token'];
           debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] token_raw: $token');
           String? flag = Get.parameters['flag'];
-          
+
           debugPrint('[PAYMENT_SUCCESS_ROUTE] Flag: $flag, Token: $token');
-          
+
           // CRITICAL FIX: Handle subscription payment success immediately
           int subscriptionId = 0; // Will be determined from payment data
           double amount = 0.0; // Will be determined from payment data
           String? transactionId;
           // String? paymentMethod = 'razorpay'; // Will be extracted from token or set to default
-          
+
           // ENHANCED: Try to extract actual payment details from URL parameters
           try {
             // Check if we have direct parameters
             if (Get.parameters.containsKey('subscription_id')) {
-              subscriptionId = int.tryParse(Get.parameters['subscription_id'] ?? '26') ?? 26;
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Extracted subscription_id from params: $subscriptionId');
+              subscriptionId =
+                  int.tryParse(Get.parameters['subscription_id'] ?? '26') ?? 26;
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Extracted subscription_id from params: $subscriptionId');
             }
             if (Get.parameters.containsKey('amount')) {
-              amount = double.tryParse(Get.parameters['amount'] ?? '2499') ?? 2499.0;
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Extracted amount from params: $amount');
+              amount =
+                  double.tryParse(Get.parameters['amount'] ?? '2499') ?? 2499.0;
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Extracted amount from params: $amount');
             }
             if (Get.parameters.containsKey('transaction_id')) {
               transactionId = Get.parameters['transaction_id'];
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Extracted transaction_id from params: $transactionId');
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Extracted transaction_id from params: $transactionId');
             }
           } catch (e) {
-            debugPrint('[PAYMENT_SUCCESS_ROUTE] Error extracting direct parameters: $e');
+            debugPrint(
+                '[PAYMENT_SUCCESS_ROUTE] Error extracting direct parameters: $e');
           }
-          
+
           // Try to decode token if present
           if (token != null && token.isNotEmpty && token != 'null') {
             try {
               // Decode base64 token to extract payment information
               String decoded = utf8.decode(base64Url.decode(token));
               debugPrint('[PAYMENT_SUCCESS_ROUTE] Decoded token: $decoded');
-              debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] token_decoded: $decoded');
-              
+              debugPrint(
+                  '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] token_decoded: $decoded');
+
               // Parse token content to extract payment details
               Map<String, String> tokenParams = {};
               decoded.split('&').forEach((param) {
@@ -1067,94 +1092,115 @@ class RouteHelper {
                   }
                 }
               });
-              
+
               // Extract subscription payment data
               String? paymentMethod = tokenParams['payment_method'];
               String? attributeId = tokenParams['attribute_id'];
               String? transactionRef = tokenParams['transaction_reference'];
-              
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Payment method: $paymentMethod');
+
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Payment method: $paymentMethod');
               debugPrint('[PAYMENT_SUCCESS_ROUTE] Attribute ID: $attributeId');
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Transaction ref: $transactionRef');
-              debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id_from_token: ${transactionRef ?? attributeId}');
-              
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Transaction ref: $transactionRef');
+              debugPrint(
+                  '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id_from_token: ${transactionRef ?? attributeId}');
+
               transactionId = transactionRef ?? attributeId;
-              
+
               // Build payment data for subscription
               if (attributeId != null || transactionRef != null) {
                 // Try to get subscription details from controller
                 try {
-                  final subscriptionController = Get.find<SubscriptionController>();
-                  
+                  final subscriptionController =
+                      Get.find<SubscriptionController>();
+
                   // CRITICAL: Extract subscription ID from payment URL parameters
                   // The payment URL contains package_id which maps to subscription UUID
-                  
+
                   // First, try to get subscription ID from URL parameters if available
                   if (subscriptionId == 0) {
                     // Extract from URL parameters (callback URL may contain subscription info)
                     final urlParams = Uri.base.queryParameters;
                     if (urlParams.containsKey('subscription_id')) {
-                      subscriptionId = int.tryParse(urlParams['subscription_id'] ?? '0') ?? 0;
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Found subscription_id in URL: $subscriptionId');
+                      subscriptionId =
+                          int.tryParse(urlParams['subscription_id'] ?? '0') ??
+                              0;
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Found subscription_id in URL: $subscriptionId');
                     }
                   }
-                  
+
                   // Find the subscription that was actually paid for
                   if (subscriptionController.subscriptions.isNotEmpty) {
                     // CRITICAL: Try to extract package_id from the original payment URL
                     // The payment URL was: package_id=cafcfa1e-f2ec-4902-bde7-d20b79c0f216
                     // This should map to subscription ID 34 (60 Mints Cleaning Service)
-                    
+
                     // Look for the subscription that matches the payment context
                     // From your logs, the payment was for ₹2999 (60 Mints Cleaning Service, ID 34)
                     if (subscriptionId == 0) {
                       // Try to find subscription by matching recent payment amount or context
                       // From logs: "amount=2999" was in the payment URL
                       final targetAmount = 2999.0; // From your payment logs
-                      
+
                       for (final sub in subscriptionController.subscriptions) {
-                        final subPrice = double.tryParse(sub.price ?? '0') ?? 0.0;
+                        final subPrice =
+                            double.tryParse(sub.price ?? '0') ?? 0.0;
                         if (subPrice == targetAmount) {
                           subscriptionId = sub.subscriptionId ?? 0;
                           amount = subPrice;
-                          debugPrint('[PAYMENT_SUCCESS_ROUTE] Found subscription by amount match: ID=$subscriptionId, Amount=$amount, Name=${sub.name}');
+                          debugPrint(
+                              '[PAYMENT_SUCCESS_ROUTE] Found subscription by amount match: ID=$subscriptionId, Amount=$amount, Name=${sub.name}');
                           break;
                         }
                       }
-                      
+
                       // If still not found, look for subscription ID 34 specifically (from your logs)
                       if (subscriptionId == 0) {
-                        final targetSub = subscriptionController.subscriptions.firstWhereOrNull(
-                          (sub) => sub.subscriptionId == 34, // 60 Mints Cleaning Service
+                        final targetSub = subscriptionController.subscriptions
+                            .firstWhereOrNull(
+                          (sub) =>
+                              sub.subscriptionId ==
+                              34, // 60 Mints Cleaning Service
                         );
                         if (targetSub != null) {
                           subscriptionId = 34;
-                          amount = double.tryParse(targetSub.price ?? '2999') ?? 2999.0;
-                          debugPrint('[PAYMENT_SUCCESS_ROUTE] Found target subscription: ID=$subscriptionId, Amount=$amount, Name=${targetSub.name}');
+                          amount = double.tryParse(targetSub.price ?? '2999') ??
+                              2999.0;
+                          debugPrint(
+                              '[PAYMENT_SUCCESS_ROUTE] Found target subscription: ID=$subscriptionId, Amount=$amount, Name=${targetSub.name}');
                         }
                       }
                     }
-                    
+
                     // If we have subscription ID, get the details
                     if (subscriptionId > 0) {
-                      final paidSubscription = subscriptionController.subscriptions.firstWhereOrNull(
+                      final paidSubscription =
+                          subscriptionController.subscriptions.firstWhereOrNull(
                         (sub) => sub.subscriptionId == subscriptionId,
                       );
-                      
+
                       if (paidSubscription != null) {
-                        amount = double.tryParse(paidSubscription.price ?? '0') ?? amount;
-                        debugPrint('[PAYMENT_SUCCESS_ROUTE] Confirmed paid subscription: ID=$subscriptionId, Amount=$amount, Name=${paidSubscription.name}');
+                        amount =
+                            double.tryParse(paidSubscription.price ?? '0') ??
+                                amount;
+                        debugPrint(
+                            '[PAYMENT_SUCCESS_ROUTE] Confirmed paid subscription: ID=$subscriptionId, Amount=$amount, Name=${paidSubscription.name}');
                       }
                     }
-                    
+
                     // Final fallback: if still no subscription ID found, this might be an error
                     if (subscriptionId == 0) {
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] WARNING: Could not determine subscription ID from payment data');
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Available subscriptions:');
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] WARNING: Could not determine subscription ID from payment data');
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Available subscriptions:');
                       for (final sub in subscriptionController.subscriptions) {
-                        debugPrint('[PAYMENT_SUCCESS_ROUTE] - ID: ${sub.subscriptionId}, Name: ${sub.name}, Price: ${sub.price}');
+                        debugPrint(
+                            '[PAYMENT_SUCCESS_ROUTE] - ID: ${sub.subscriptionId}, Name: ${sub.name}, Price: ${sub.price}');
                       }
-                      
+
                       // Don't process payment success if we can't identify the subscription
                       return Container(
                         child: Center(
@@ -1164,7 +1210,8 @@ class RouteHelper {
                               Text('Payment processing error'),
                               Text('Could not identify subscription'),
                               ElevatedButton(
-                                onPressed: () => Get.offAllNamed('/subscription'),
+                                onPressed: () =>
+                                    Get.offAllNamed('/subscription'),
                                 child: Text('Go to Subscriptions'),
                               ),
                             ],
@@ -1172,39 +1219,45 @@ class RouteHelper {
                         ),
                       );
                     }
-                    
-                    debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] resolved_subscription_id: $subscriptionId');
+
+                    debugPrint(
+                        '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] resolved_subscription_id: $subscriptionId');
                   } else {
-                    debugPrint('[PAYMENT_SUCCESS_ROUTE] No subscriptions available, will wait and process payment anyway');
-                    
+                    debugPrint(
+                        '[PAYMENT_SUCCESS_ROUTE] No subscriptions available, will wait and process payment anyway');
+
                     // CRITICAL FIX: Don't block payment processing if subscriptions aren't loaded yet
                     // Extract subscription ID from payment data or use fallback logic
-                    
+
                     // From the logs, we can see the payment was for subscription ID 26 (₹2499)
                     // Let's extract this from the payment context
                     if (attributeId != null) {
                       // The attribute_id in the token represents the payment timestamp/reference
                       // We need to determine which subscription was paid for
-                      
+
                       // CRITICAL FIX: Extract subscription ID from payment context
                       // The payment URL contains amount parameter that we can use to identify the subscription
-                      
+
                       // Try to extract amount from the original payment URL or use common amounts
                       if (amount == 0.0) {
                         // Check if we can extract amount from URL parameters
                         final urlParams = Uri.base.queryParameters;
                         if (urlParams.containsKey('amount')) {
-                          amount = double.tryParse(urlParams['amount'] ?? '0') ?? 0.0;
-                          debugPrint('[PAYMENT_SUCCESS_ROUTE] Extracted amount from URL: $amount');
+                          amount =
+                              double.tryParse(urlParams['amount'] ?? '0') ??
+                                  0.0;
+                          debugPrint(
+                              '[PAYMENT_SUCCESS_ROUTE] Extracted amount from URL: $amount');
                         }
-                        
+
                         // If still no amount, check common subscription amounts
                         if (amount == 0.0) {
                           // Default to most recent payment amount from logs (₹2999 for subscription 34)
-                          amount = 2999.0; // Latest payment was for 60 Mints Cleaning Service
+                          amount =
+                              2999.0; // Latest payment was for 60 Mints Cleaning Service
                         }
                       }
-                      
+
                       // Map amount to subscription ID
                       if (subscriptionId == 0) {
                         if (amount == 2999.0) {
@@ -1217,15 +1270,18 @@ class RouteHelper {
                           amount = 2999.0;
                         }
                       }
-                      
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Using fallback subscription data: ID=$subscriptionId, Amount=$amount');
-                      debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] fallback_subscription_id: $subscriptionId');
+
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Using fallback subscription data: ID=$subscriptionId, Amount=$amount');
+                      debugPrint(
+                          '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] fallback_subscription_id: $subscriptionId');
                     }
                   }
                 } catch (e) {
-                  debugPrint('[PAYMENT_SUCCESS_ROUTE] Could not get subscription details from controller: $e');
+                  debugPrint(
+                      '[PAYMENT_SUCCESS_ROUTE] Could not get subscription details from controller: $e');
                 }
-                
+
                 // Get user ID with fallback methods
                 String userId = '';
                 try {
@@ -1244,21 +1300,26 @@ class RouteHelper {
                             normalizedPayload += '=';
                           }
                           try {
-                            final decoded = utf8.decode(base64Decode(normalizedPayload));
-                            final Map<String, dynamic> tokenData = jsonDecode(decoded);
+                            final decoded =
+                                utf8.decode(base64Decode(normalizedPayload));
+                            final Map<String, dynamic> tokenData =
+                                jsonDecode(decoded);
                             userId = tokenData['sub']?.toString() ?? '';
-                            debugPrint('[PAYMENT_SUCCESS_ROUTE] Extracted user ID from token: $userId');
+                            debugPrint(
+                                '[PAYMENT_SUCCESS_ROUTE] Extracted user ID from token: $userId');
                           } catch (e) {
-                            debugPrint('[PAYMENT_SUCCESS_ROUTE] Token decode failed: $e');
+                            debugPrint(
+                                '[PAYMENT_SUCCESS_ROUTE] Token decode failed: $e');
                           }
                         }
                       }
                     }
                   }
                 } catch (e) {
-                  debugPrint('[PAYMENT_SUCCESS_ROUTE] Error getting user ID: $e');
+                  debugPrint(
+                      '[PAYMENT_SUCCESS_ROUTE] Error getting user ID: $e');
                 }
-                
+
                 paymentData = {
                   'subscriptionId': subscriptionId,
                   'amount': amount,
@@ -1266,24 +1327,28 @@ class RouteHelper {
                   'paymentMethod': paymentMethod ?? 'razorpay',
                   'user_id': userId,
                 };
-                
-                debugPrint('[PAYMENT_SUCCESS_ROUTE] Built payment data: $paymentData');
-                debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] user_id: ${Get.find<UserController>().userInfoModel?.id ?? ''}');
-                debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] subscription_id: $subscriptionId');
-                debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id: $transactionId');
+
+                debugPrint(
+                    '[PAYMENT_SUCCESS_ROUTE] Built payment data: $paymentData');
+                debugPrint(
+                    '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] user_id: ${Get.find<UserController>().userInfoModel?.id ?? ''}');
+                debugPrint(
+                    '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] subscription_id: $subscriptionId');
+                debugPrint(
+                    '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id: $transactionId');
               }
             } catch (e) {
               debugPrint('[PAYMENT_SUCCESS_ROUTE] Error decoding token: $e');
             }
           }
-          
+
           // If no payment data extracted from token, try other parameters
           if (paymentData == null) {
             String? paymentId = Get.parameters['payment_id'];
             if (paymentId != null) {
               transactionId = paymentId;
             }
-            
+
             // Build default payment data
             paymentData = {
               'subscriptionId': subscriptionId,
@@ -1292,17 +1357,21 @@ class RouteHelper {
               'paymentMethod': 'razorpay',
               'user_id': Get.find<UserController>().userInfoModel?.id ?? '',
             };
-            debugPrint('[PAYMENT_SUCCESS_ROUTE] Built default payment data: $paymentData');
-            debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] user_id: ${Get.find<UserController>().userInfoModel?.id ?? ''}');
-            debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] subscription_id: $subscriptionId');
-            debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id: ${transactionId ?? 'unknown'}');
+            debugPrint(
+                '[PAYMENT_SUCCESS_ROUTE] Built default payment data: $paymentData');
+            debugPrint(
+                '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] user_id: ${Get.find<UserController>().userInfoModel?.id ?? ''}');
+            debugPrint(
+                '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] subscription_id: $subscriptionId');
+            debugPrint(
+                '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] transaction_id: ${transactionId ?? 'unknown'}');
           }
-          
+
           // CRITICAL: Handle subscription payment success with comprehensive error handling
           if (flag == 'success' || flag == null) {
             try {
               final subscriptionController = Get.find<SubscriptionController>();
-              
+
               // Get user ID with multiple fallback methods
               String userId = '';
               if (paymentData != null) {
@@ -1317,126 +1386,159 @@ class RouteHelper {
                 try {
                   userId = Get.find<UserController>().userInfoModel?.id ?? '';
                 } catch (e) {
-                  debugPrint('[PAYMENT_SUCCESS_ROUTE] Error getting user ID from UserController: $e');
+                  debugPrint(
+                      '[PAYMENT_SUCCESS_ROUTE] Error getting user ID from UserController: $e');
                 }
               }
-              
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Processing subscription payment success');
-              debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] processing user_id: $userId, subscription_id: $subscriptionId, transaction_id: ${transactionId ?? 'unknown'}');
+
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Processing subscription payment success');
+              debugPrint(
+                  '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] processing user_id: $userId, subscription_id: $subscriptionId, transaction_id: ${transactionId ?? 'unknown'}');
               debugPrint('[PAYMENT_SUCCESS_ROUTE] User ID: $userId');
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Subscription ID: $subscriptionId');
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Subscription ID: $subscriptionId');
               debugPrint('[PAYMENT_SUCCESS_ROUTE] Amount: $amount');
-              
+
               if (userId.isNotEmpty && subscriptionId > 0) {
-                debugPrint('[PAYMENT_SUCCESS_ROUTE] Calling handlePaymentSuccess for subscription $subscriptionId');
+                debugPrint(
+                    '[PAYMENT_SUCCESS_ROUTE] Calling handlePaymentSuccess for subscription $subscriptionId');
                 // Use Future.microtask to handle async call in sync context
                 Future.microtask(() async {
                   bool success = false;
-                  
+
                   try {
                     // LAYER 1: Force update subscription status immediately
-                    await subscriptionController.forceUpdateSubscriptionStatus(subscriptionId, true);
-                    debugPrint('[PAYMENT_SUCCESS_ROUTE] Layer 1: Force updated subscription status to true');
-                    debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] force_update user_id: $userId, subscription_id: $subscriptionId');
-                    
+                    await subscriptionController.forceUpdateSubscriptionStatus(
+                        subscriptionId, true);
+                    debugPrint(
+                        '[PAYMENT_SUCCESS_ROUTE] Layer 1: Force updated subscription status to true');
+                    debugPrint(
+                        '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] force_update user_id: $userId, subscription_id: $subscriptionId');
+
                     // LAYER 2: Handle the full payment success flow (includes backend API call)
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] Layer 2: Calling handlePaymentSuccess with data:\x1B[0m');
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Subscription ID: $subscriptionId\x1B[0m');
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] - User ID: $userId\x1B[0m');
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Transaction ID: ${transactionId ?? 'payment_${DateTime.now().millisecondsSinceEpoch}'}\x1B[0m');
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Amount: $amount\x1B[0m');
-                    
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] Layer 2: Calling handlePaymentSuccess with data:\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Subscription ID: $subscriptionId\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] - User ID: $userId\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Transaction ID: ${transactionId ?? 'payment_${DateTime.now().millisecondsSinceEpoch}'}\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] - Amount: $amount\x1B[0m');
+
                     await subscriptionController.handlePaymentSuccess(
                       subscriptionId: subscriptionId,
                       userId: userId,
-                      transactionId: transactionId ?? 'payment_${DateTime.now().millisecondsSinceEpoch}',
+                      transactionId: transactionId ??
+                          'payment_${DateTime.now().millisecondsSinceEpoch}',
                     );
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] Layer 2: ✅ Payment success handled successfully\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS_ROUTE] Layer 2: ✅ Payment success handled successfully\x1B[0m');
                     success = true;
-                    
                   } catch (e) {
-                    debugPrint('[PAYMENT_SUCCESS_ROUTE] Error in payment handling layers: $e');
-                    
+                    debugPrint(
+                        '[PAYMENT_SUCCESS_ROUTE] Error in payment handling layers: $e');
+
                     // LAYER 3: Fallback - Ensure local status is updated even if backend fails
                     try {
-                      await subscriptionController.forceUpdateSubscriptionStatus(subscriptionId, true);
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Layer 3: Fallback force update completed');
+                      await subscriptionController
+                          .forceUpdateSubscriptionStatus(subscriptionId, true);
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Layer 3: Fallback force update completed');
                       success = true;
-                      
                     } catch (fallbackError) {
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Layer 3: Fallback force update failed: $fallbackError');
-                      
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Layer 3: Fallback force update failed: $fallbackError');
+
                       // LAYER 4: Manual local state update as last resort
                       try {
-                        subscriptionController.userSubscriptionStatus[subscriptionId] = true;
+                        subscriptionController
+                            .userSubscriptionStatus[subscriptionId] = true;
                         // Note: _saveSubscriptionStatusToCache is private, will be called internally
                         subscriptionController.userSubscriptionStatus.refresh();
                         subscriptionController.update();
-                        debugPrint('[PAYMENT_SUCCESS_ROUTE] Layer 4: Manual state update completed');
+                        debugPrint(
+                            '[PAYMENT_SUCCESS_ROUTE] Layer 4: Manual state update completed');
                         success = true;
                       } catch (manualError) {
-                        debugPrint('[PAYMENT_SUCCESS_ROUTE] Layer 4: Manual state update failed: $manualError');
+                        debugPrint(
+                            '[PAYMENT_SUCCESS_ROUTE] Layer 4: Manual state update failed: $manualError');
                       }
                     }
                   }
-                  
+
                   // LAYER 5: Always navigate to show results
                   try {
                     if (success) {
-                      debugPrint('\x1B[32m[PAYMENT_SUCCESS_ROUTE] ✅ All layers successful, navigating to subscription screen\x1B[0m');
+                      debugPrint(
+                          '\x1B[32m[PAYMENT_SUCCESS_ROUTE] ✅ All layers successful, navigating to subscription screen\x1B[0m');
                       Get.offAllNamed('/subscription');
-                      debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] navigated_to: /subscription (success)');
+                      debugPrint(
+                          '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] navigated_to: /subscription (success)');
                     } else {
                       // Navigate to subscription screen even on failure to show current state
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Some layers failed, but navigating to show current state');
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Some layers failed, but navigating to show current state');
                       Get.offAllNamed('/subscription');
-                      debugPrint('[moshi mosh] [PAYMENT_SUCCESS_ROUTE] navigated_to: /subscription (fallback)');
+                      debugPrint(
+                          '[moshi mosh] [PAYMENT_SUCCESS_ROUTE] navigated_to: /subscription (fallback)');
                     }
                   } catch (navError) {
-                    debugPrint('[PAYMENT_SUCCESS_ROUTE] Navigation error: $navError');
+                    debugPrint(
+                        '[PAYMENT_SUCCESS_ROUTE] Navigation error: $navError');
                     // Try alternative navigation
                     try {
                       Get.offAllNamed('/');
                     } catch (altNavError) {
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Alternative navigation failed: $altNavError');
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Alternative navigation failed: $altNavError');
                     }
                   }
                 });
               } else {
-                debugPrint('[PAYMENT_SUCCESS_ROUTE] Invalid data - User ID: "$userId", Subscription ID: $subscriptionId');
+                debugPrint(
+                    '[PAYMENT_SUCCESS_ROUTE] Invalid data - User ID: "$userId", Subscription ID: $subscriptionId');
                 // Still try to update with available data
                 Future.microtask(() async {
                   try {
                     if (subscriptionId > 0) {
-                      await subscriptionController.forceUpdateSubscriptionStatus(subscriptionId, true);
-                      debugPrint('[PAYMENT_SUCCESS_ROUTE] Force updated with partial data');
+                      await subscriptionController
+                          .forceUpdateSubscriptionStatus(subscriptionId, true);
+                      debugPrint(
+                          '[PAYMENT_SUCCESS_ROUTE] Force updated with partial data');
                     }
                   } catch (e) {
-                    debugPrint('[PAYMENT_SUCCESS_ROUTE] Force update with partial data failed: $e');
+                    debugPrint(
+                        '[PAYMENT_SUCCESS_ROUTE] Force update with partial data failed: $e');
                   } finally {
                     Get.offAllNamed('/subscription');
                   }
                 });
               }
             } catch (e) {
-              debugPrint('[PAYMENT_SUCCESS_ROUTE] Critical error in payment success handling: $e');
+              debugPrint(
+                  '[PAYMENT_SUCCESS_ROUTE] Critical error in payment success handling: $e');
               // Navigate anyway to prevent user from being stuck
               Future.microtask(() {
                 try {
                   Get.offAllNamed('/subscription');
                 } catch (navError) {
-                  debugPrint('[PAYMENT_SUCCESS_ROUTE] Critical navigation error: $navError');
+                  debugPrint(
+                      '[PAYMENT_SUCCESS_ROUTE] Critical navigation error: $navError');
                   Get.offAllNamed('/');
                 }
               });
             }
           } else {
-            debugPrint('[PAYMENT_SUCCESS_ROUTE] Payment failed or cancelled (flag: $flag), navigating to subscriptions');
+            debugPrint(
+                '[PAYMENT_SUCCESS_ROUTE] Payment failed or cancelled (flag: $flag), navigating to subscriptions');
             Future.microtask(() {
               Get.offAllNamed('/subscription');
             });
           }
-          
+
           return PaymentWaitingScreen(
             fromPage: 'subscription',
             token: token,

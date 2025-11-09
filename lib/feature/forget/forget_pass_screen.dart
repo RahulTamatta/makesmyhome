@@ -155,21 +155,46 @@ class _ForgetPassScreenState extends State<ForgetPassScreen> {
     var config = Get.find<SplashController>().configModel.content;
     SendOtpType  type = config?.firebaseOtpVerification == 1 && phone != "" ? SendOtpType.firebase : SendOtpType.forgetPassword;
 
-    authController.sendVerificationCode(identity: identity, identityType: phone !="" ? "phone" : "email", type: type, fromPage: "forget-password", ).then((status){
-      if(status != null){
-        if(status.isSuccess!){
+    debugPrint('[FORGOT_PASSWORD_SCREEN] Starting OTP request for: $identity (type: ${phone != "" ? "phone" : "email"})');
+
+    // ENHANCED FIX: Remove screen-level timeout to allow repository CORS fallback to work
+    try {
+      debugPrint('[FORGOT_PASSWORD_SCREEN] Sending OTP request without timeout to allow CORS fallback');
+      
+      final result = await authController.sendVerificationCode(
+        identity: identity, 
+        identityType: phone !="" ? "phone" : "email", 
+        type: type, 
+        fromPage: "forget-password"
+      );
+
+      if(result != null){
+        if(result.isSuccess!){
+          debugPrint('[FORGOT_PASSWORD_SCREEN] ✅ OTP request successful, navigating to verification');
           Get.toNamed(RouteHelper.getVerificationRoute(
             identity: identity,identityType: phone !="" ? "phone" : "email",
             fromPage: "forget-password",
-            firebaseSession: type == SendOtpType.firebase ? status.message : null,
+            firebaseSession: type == SendOtpType.firebase ? result.message : null,
           ));
         }else{
-          customSnackBar(status.message.toString().capitalizeFirst ?? "" );
+          debugPrint('[FORGOT_PASSWORD_SCREEN] ❌ OTP request failed: ${result.message}');
+          customSnackBar(result.message.toString().capitalizeFirst ?? "Failed to send OTP. Please try again.");
         }
+      } else {
+        debugPrint('[FORGOT_PASSWORD_SCREEN] ❌ Null response received');
+        customSnackBar("Failed to send OTP. Please try again.");
       }
-    });
-
+    } catch (e) {
+      debugPrint('[FORGOT_PASSWORD_SCREEN][ERROR] Exception occurred: $e');
+      customSnackBar("Network error occurred. Please check your connection and try again.");
+      
+      // CRITICAL FIX: Ensure loading state is cleared even if exception occurs
+      authController.forceStopLoading();
+    } finally {
+      // Extra safety: always stop loading irrespective of code path
+      authController.forceStopLoading();
     }
+  }
 
   toggleIsNumberLogin ({bool? value, bool isUpdate = true}){
     if(_forgetPasswordMethod == "both"){

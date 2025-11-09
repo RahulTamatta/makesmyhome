@@ -1,57 +1,50 @@
 {
   "project_info": {
-    "project_number": "1024512016620",
-    "project_id": "housecraft-bd864",
-    "storage_bucket": "housecraft-bd864.firebasestorage.app"
+    "project_number": "540954631359",
+    "project_id": "makesmyhomeuser",
+    "storage_bucket": "makesmyhomeuser.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1024512016620:android:de220d620bfbd49105a5c9",
+        "mobilesdk_app_id": "1:540954631359:android:3f0f563574b9cc6a907a0a",
         "android_client_info": {
-          "package_name": "com.sixamtech.demandium.user"
+          "package_name": "com.newmakesmyhome.user"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1024512016620-fc8qtsqpund8u7ombu1kglcdlr4kuqc6.apps.googleusercontent.com",
+          "client_id": "540954631359-4bbkr99movhpq0sheb60k56b6avpt1j4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.sixamtech.demandium.user",
-            "certificate_hash": "8d3396d480944ec088c71162594b279f92cc6f64"
-          }
-        },
-        {
-          "client_id": "1024512016620-npjaiqhgp76jciv68h49nd3q3f1cven6.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.sixamtech.demandium.user",
+            "package_name": "com.newmakesmyhome.user",
             "certificate_hash": "d83b60fbc51f6e2fb63322a586d5f6e89ee734d7"
           }
         },
         {
-          "client_id": "1024512016620-v7ctqhf4tahphvbsprqhp0agarcflh6b.apps.googleusercontent.com",
+          "client_id": "540954631359-6ttulg473mkpu1rmov0oa09j02iecvc0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.newmakesmyhome.user",
+            "certificate_hash": "2733c2113a34d9d85ccf290fe01d278e440b4157"
+          }
+        },
+        {
+          "client_id": "540954631359-knp10pm35b7scq2bmvs06kjsvpnj8es2.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBO413sTw8QxVBOglAVNXyyDHm_BBvwRwM"
+          "current_key": "AIzaSyBRm0BwPdCN5fysWybkrlQkf5nYYX2_asw"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1024512016620-v7ctqhf4tahphvbsprqhp0agarcflh6b.apps.googleusercontent.com",
+              "client_id": "540954631359-knp10pm35b7scq2bmvs06kjsvpnj8es2.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "1024512016620-bqeh1182qf5l4ehuhdu5025ls55dc08d.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.sixamtech.demandium.user"
-              }
             }
           ]
         }

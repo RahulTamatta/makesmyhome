@@ -51,11 +51,11 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       if (widget.fromPage == "checkout") {
         // Refresh cart data
         await Get.find<CartController>().getCartListFromServer();
-        
+
         // Navigate to checkout complete
         Get.offNamed(RouteHelper.getCheckoutRoute(
-          RouteHelper.checkout, 
-          'complete', 
+          RouteHelper.checkout,
+          'complete',
           'null',
           token: widget.token ?? '',
         ));
@@ -65,25 +65,29 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       } else if (widget.fromPage == "subscription") {
         // Handle subscription success
         final data = widget.paymentData;
-        debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Processing subscription payment data: $data');
-        
+        debugPrint(
+            '[PAYMENT_WAITING][SUBSCRIPTION] Processing subscription payment data: $data');
+
         if (data != null) {
           // Parse and validate subscription data
-          final subscriptionId = int.tryParse(data['subscriptionId']?.toString() ?? '0') ?? 0;
-          final amount = double.tryParse(data['amount']?.toString() ?? '0.0') ?? 0.0;
+          final subscriptionId =
+              int.tryParse(data['subscriptionId']?.toString() ?? '0') ?? 0;
+          final amount =
+              double.tryParse(data['amount']?.toString() ?? '0.0') ?? 0.0;
           final transactionId = data['transactionId']?.toString() ?? '';
           final paymentMethod = data['paymentMethod']?.toString() ?? 'razorpay';
           final userId = data['user_id']?.toString() ?? '';
-          
+
           debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Parsed data:');
           debugPrint('  - subscriptionId: $subscriptionId');
           debugPrint('  - amount: $amount');
           debugPrint('  - transactionId: $transactionId');
           debugPrint('  - paymentMethod: $paymentMethod');
           debugPrint('  - userId: $userId');
-          
+
           if (subscriptionId > 0 && amount > 0 && userId.isNotEmpty) {
-            debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Calling subscribeUser API...');
+            debugPrint(
+                '[PAYMENT_WAITING][SUBSCRIPTION] Calling subscribeUser API...');
             try {
               await Get.find<SubscriptionController>().subscribeUser(
                 subscriptionId: subscriptionId,
@@ -92,22 +96,28 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                 paymentMethod: paymentMethod,
                 user_id: userId,
               );
-              debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Subscription API call completed');
-              
+              debugPrint(
+                  '[PAYMENT_WAITING][SUBSCRIPTION] Subscription API call completed');
+
               // Refresh subscription list to get updated status
-              debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Refreshing subscription list...');
+              debugPrint(
+                  '[PAYMENT_WAITING][SUBSCRIPTION] Refreshing subscription list...');
               await Get.find<SubscriptionController>().fetchSubscriptions();
-              debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Subscription list refreshed');
+              debugPrint(
+                  '[PAYMENT_WAITING][SUBSCRIPTION] Subscription list refreshed');
             } catch (e) {
-              debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Subscription API call failed: $e');
+              debugPrint(
+                  '[PAYMENT_WAITING][SUBSCRIPTION] Subscription API call failed: $e');
             }
           } else {
-            debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] Invalid subscription data - skipping API call');
+            debugPrint(
+                '[PAYMENT_WAITING][SUBSCRIPTION] Invalid subscription data - skipping API call');
           }
         } else {
-          debugPrint('[PAYMENT_WAITING][SUBSCRIPTION] No payment data provided');
+          debugPrint(
+              '[PAYMENT_WAITING][SUBSCRIPTION] No payment data provided');
         }
-        
+
         Get.offNamed(RouteHelper.getSubscriptionPaymentResultRoute(
           flag: 'success',
           subscriptionId: data?['subscriptionId']?.toString() ?? '',
@@ -117,7 +127,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
         ));
       } else if (widget.fromPage == "add-fund") {
         Get.offNamed(RouteHelper.getMyWalletScreen(
-          flag: 'success', 
+          flag: 'success',
           token: widget.token ?? '',
         ));
       } else if (widget.fromPage == "repeat-booking") {
@@ -138,7 +148,8 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     } catch (e) {
       // Handle error - navigate to appropriate failure screen
       if (widget.fromPage == "subscription") {
-        Get.offNamed(RouteHelper.getSubscriptionPaymentResultRoute(flag: 'fail'));
+        Get.offNamed(
+            RouteHelper.getSubscriptionPaymentResultRoute(flag: 'fail'));
       } else {
         Get.offNamed(RouteHelper.getOrderSuccessRoute('fail'));
       }
@@ -181,31 +192,35 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Processing text
               Text(
                 'processing_payment'.tr,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               Text(
                 'please_wait_while_we_process_your_payment'.tr,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                ),
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.color
+                          ?.withOpacity(0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               // Progress indicator
               Container(
                 width: 200,

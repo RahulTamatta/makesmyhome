@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-enum BnbItem { homePage, bookings, cart, subscription, wallet }
+enum BnbItem { homePage, bookings, cart, subscription, autocare }
 
 class BottomNavController extends GetxController implements GetxService {
   static BottomNavController get to => Get.find();

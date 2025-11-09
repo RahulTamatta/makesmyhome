@@ -1,6 +1,7 @@
 import 'package:makesmyhome/utils/core_export.dart';
 import 'package:get/get.dart';
 import 'package:makesmyhome/feature/subscription/view/subscription_screen.dart';
+import 'package:makesmyhome/feature/autocare/view/autocare_main_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   final AddressModel? previousAddress;
@@ -33,7 +34,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
           .changePage(BnbItem.cart, shouldUpdate: false);
     } else if (_pageIndex == 3) {
       Get.find<BottomNavController>()
-          .changePage(BnbItem.wallet, shouldUpdate: false);
+          .changePage(BnbItem.autocare, shouldUpdate: false);
     } else if (_pageIndex == 4) {
       Get.find<BottomNavController>()
           .changePage(BnbItem.subscription, shouldUpdate: false);
@@ -137,17 +138,12 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
                         },
                       ),
                       _bnbItem(
-                        icon: Images.walletMenu,
-                        bnbItem: BnbItem.wallet,
+                        icon: Icons.local_car_wash,
+                        bnbItem: BnbItem.autocare,
                         context: context,
                         onTap: () {
-                          if (!isUserLoggedIn) {
-                            Get.toNamed(RouteHelper.getSignInRoute(
-                                fromPage: RouteHelper.home));
-                          } else {
-                            Get.find<BottomNavController>()
-                                .changePage(BnbItem.wallet);
-                          }
+                          Get.find<BottomNavController>()
+                              .changePage(BnbItem.autocare);
                         },
                       ),
                     ]),
@@ -199,9 +195,11 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
                           ),
                 const SizedBox(height: Dimensions.paddingSizeExtraSmall),
                 Text(
-                  bnbItem != BnbItem.subscription
-                      ? bnbItem.name.tr
-                      : 'Subscription',
+                  bnbItem == BnbItem.subscription
+                      ? 'Subscription'
+                      : bnbItem == BnbItem.autocare
+                          ? 'Wash'
+                          : bnbItem.name.tr,
                   style: robotoRegular.copyWith(
                     fontSize: Dimensions.fontSizeSmall,
                     color:
@@ -240,19 +238,8 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
         } else {
           return const MySubscriptionsPage();
         }
-      case BnbItem.wallet:
-        if (!Get.find<AuthController>().isLoggedIn()) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Get.toNamed(RouteHelper.getSignInRoute(fromPage: RouteHelper.home));
-          });
-          return const SizedBox();
-        } else {
-          return const WalletScreen(status: null);
-        }
-      //   return const SizedBox();
-      // } else {
-      //   return const CommunityScreen(); // ✅ This should be a Widget!
-      // }
+      case BnbItem.autocare:
+        return const AutocareMainScreen();
       case BnbItem.cart:
         return const CartScreen(fromNav: true);
     }

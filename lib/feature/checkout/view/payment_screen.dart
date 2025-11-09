@@ -221,15 +221,18 @@ class MyInAppBrowser extends InAppBrowser {
     if (kDebugMode) {
       print("\n\nStarted: $url\n\n");
     }
-    
+
     // DEBUGGING: Check if backend is immediately redirecting to success
     final urlStr = url.toString();
-    if (urlStr.contains('payment/razor-pay/pay') && urlStr.contains('payment_id=')) {
-      debugPrint('[PAYMENT_DEBUG] ⚠️ BACKEND ISSUE: Immediate redirect to success detected!');
+    if (urlStr.contains('payment/razor-pay/pay') &&
+        urlStr.contains('payment_id=')) {
+      debugPrint(
+          '[PAYMENT_DEBUG] ⚠️ BACKEND ISSUE: Immediate redirect to success detected!');
       debugPrint('[PAYMENT_DEBUG] URL: $urlStr');
-      debugPrint('[PAYMENT_DEBUG] This means backend is not creating new payment session');
+      debugPrint(
+          '[PAYMENT_DEBUG] This means backend is not creating new payment session');
     }
-    
+
     // Do not redirect-check on start; wait for page to finish loading to avoid premature closes
     // _pageRedirect(url.toString());
   }
@@ -396,8 +399,9 @@ class MyInAppBrowser extends InAppBrowser {
           qp.containsKey('razorpay_signature');
 
       // Razorpay payment completion - treat /payment/razor-pay/pay with payment_id as success
-      final bool razorPaymentComplete = path.contains('payment/razor-pay/pay') &&
-          qp.containsKey('payment_id');
+      final bool razorPaymentComplete =
+          path.contains('payment/razor-pay/pay') &&
+              qp.containsKey('payment_id');
 
       // Consider success if: success flags OR razor verified OR token contains attribute_id OR razorpay payment complete
       bool tokenIndicatesSuccess = false;
@@ -408,7 +412,7 @@ class MyInAppBrowser extends InAppBrowser {
           tokenIndicatesSuccess = decoded.contains('attribute_id=');
         } catch (_) {}
       }
-      
+
       // FIXED: For subscription payments, only consider success if user actually interacted with payment
       bool isSuccess = false;
       if (fromPage == "subscription") {
@@ -416,35 +420,55 @@ class MyInAppBrowser extends InAppBrowser {
         // 1. Real razorpay success with verification params
         // 2. Success flag with token (after razorpay verification)
         // 3. Verified razorpay payment
-        isSuccess = isOurDomain && (
-          (flagSuccess && tokenIndicatesSuccess) ||  // Success page with valid token
-          (qp['status'] == 'success' && qp.containsKey('razorpay_signature')) ||
-          (path.contains('payment/success') && flagSuccess && tokenIndicatesSuccess) ||
-          razorVerified
-        );
-        
+        isSuccess = isOurDomain &&
+            ((flagSuccess &&
+                    tokenIndicatesSuccess) || // Success page with valid token
+                (qp['status'] == 'success' &&
+                    qp.containsKey('razorpay_signature')) ||
+                (path.contains('payment/success') &&
+                    flagSuccess &&
+                    tokenIndicatesSuccess) ||
+                razorVerified);
+
         // Do NOT auto-close on razor-pay/pay URLs for subscriptions - wait for actual payment
-        if (path.contains('payment/razor-pay/pay') && !qp.containsKey('razorpay_signature')) {
-          print('[PAYMENT_DEBUG] ⚠️ Ignoring fake success - waiting for real payment interaction');
+        if (path.contains('payment/razor-pay/pay') &&
+            !qp.containsKey('razorpay_signature')) {
+          print(
+              '[PAYMENT_DEBUG] ⚠️ Ignoring fake success - waiting for real payment interaction');
           isSuccess = false;
         }
-        
+
         // Debug the success detection
         if (isSuccess) {
           print('[PAYMENT_DEBUG] ✅ REAL SUCCESS DETECTED!');
           print('[PAYMENT_DEBUG] - flagSuccess: $flagSuccess');
-          print('[PAYMENT_DEBUG] - tokenIndicatesSuccess: $tokenIndicatesSuccess');
+          print(
+              '[PAYMENT_DEBUG] - tokenIndicatesSuccess: $tokenIndicatesSuccess');
           print('[PAYMENT_DEBUG] - path: $path');
         }
       } else {
-        // Original logic for other payment types
+        // Service/other payments: be strict to ensure Razorpay UI actually opens
+        // Do NOT treat intermediate /payment/razor-pay/pay?payment_id=... as success
+        // Do NOT treat token-only presence as success
         isSuccess = isOurDomain &&
-            (flagSuccess ||
-                qp['status'] == 'success' ||
-                qp['payment_status'] == 'success' ||
-                tokenIndicatesSuccess ||
-                razorPaymentComplete ||
-                razorVerified);
+            (
+              // Explicit success markers from backend
+              flagSuccess ||
+              qp['status'] == 'success' ||
+              qp['payment_status'] == 'success' ||
+              // Verified Razorpay completion (signature present)
+              razorVerified
+            );
+        if (kDebugMode && fromPage == "checkout") {
+          debugPrint('[SERVICE_PAYMENT_DEBUG] Strict success detection for checkout:');
+          debugPrint('  - flagSuccess: ' + flagSuccess.toString());
+          debugPrint('  - status: ' + (qp['status'] ?? '')); 
+          debugPrint('  - payment_status: ' + (qp['payment_status'] ?? ''));
+          debugPrint('  - razorVerified: ' + razorVerified.toString());
+          debugPrint('  - tokenIndicatesSuccess (ignored): ' + tokenIndicatesSuccess.toString());
+          debugPrint('  - razorPaymentComplete (ignored): ' + razorPaymentComplete.toString());
+          debugPrint('  - final isSuccess: ' + isSuccess.toString());
+        }
       }
 
       bool isFailed = flagFail ||
@@ -460,19 +484,26 @@ class MyInAppBrowser extends InAppBrowser {
         print(
             'Redirect debug -> baseHost:$baseHost host:$host path:$path qp:${uri.query}');
         print('Callback path checks:');
-        print('  - path.contains("payment/callback"): ${path.contains('payment/callback')}');
-        print('  - path.contains("payment/razor-pay/callback"): ${path.contains('payment/razor-pay/callback')}');
-        print('  - path.contains("payment/razor-pay/pay"): ${path.contains('payment/razor-pay/pay')}');
-        print('  - path.contains("payment/success"): ${path.contains('payment/success')}');
+        print(
+            '  - path.contains("payment/callback"): ${path.contains('payment/callback')}');
+        print(
+            '  - path.contains("payment/razor-pay/callback"): ${path.contains('payment/razor-pay/callback')}');
+        print(
+            '  - path.contains("payment/razor-pay/pay"): ${path.contains('payment/razor-pay/pay')}');
+        print(
+            '  - path.contains("payment/success"): ${path.contains('payment/success')}');
         print('  - path.endsWith("/success"): ${path.endsWith('/success')}');
-        print('  - path.contains("payment/fail"): ${path.contains('payment/fail')}');
+        print(
+            '  - path.contains("payment/fail"): ${path.contains('payment/fail')}');
         print('  - path.endsWith("/fail"): ${path.endsWith('/fail')}');
         print(
             'Redirect result -> isSuccess:$isSuccess isFailed:$isFailed isCancel:$isCancel isCallbackPath:$isCallbackPath');
-        print('Debug flags -> razorVerified:$razorVerified razorPaymentComplete:$razorPaymentComplete tokenIndicatesSuccess:$tokenIndicatesSuccess');
+        print(
+            'Debug flags -> razorVerified:$razorVerified razorPaymentComplete:$razorPaymentComplete tokenIndicatesSuccess:$tokenIndicatesSuccess');
         print('Domain check -> isOurDomain:$isOurDomain');
-        print('Flag values -> flag:$flag flagSuccess:$flagSuccess flagFail:$flagFail');
-        
+        print(
+            'Flag values -> flag:$flag flagSuccess:$flagSuccess flagFail:$flagFail');
+
         // Additional debug for subscription payments
         if (fromPage == "subscription") {
           print('[SUBSCRIPTION_DEBUG] Razorpay verification check:');
@@ -484,10 +515,12 @@ class MyInAppBrowser extends InAppBrowser {
       }
       // Close browser if our domain reports a terminal state OR token success, even if path is non-standard
       // Also close if it's a callback path with clear status
-      if (((isSuccess || isFailed || isCancel) && isOurDomain) || 
-          (isCallbackPath && isOurDomain && (isSuccess || isFailed || isCancel))) {
+      if (((isSuccess || isFailed || isCancel) && isOurDomain) ||
+          (isCallbackPath &&
+              isOurDomain &&
+              (isSuccess || isFailed || isCancel))) {
         _canRedirect = false;
-        
+
         // FIXED: Add delay for subscription payments to let user see the payment interface
         if (fromPage == "subscription" && isSuccess) {
           // Delay closure for subscription payments to improve UX
@@ -535,13 +568,15 @@ class MyInAppBrowser extends InAppBrowser {
               // Try to get actual payment method from query parameters
               String actualMethod = qp['method'] ?? qp['payment_method'] ?? '';
               if (actualMethod.isNotEmpty) {
-                paymentMethod = actualMethod; // Use actual method (e.g., 'card', 'upi', 'netbanking')
+                paymentMethod =
+                    actualMethod; // Use actual method (e.g., 'card', 'upi', 'netbanking')
               } else {
-                paymentMethod = _lastPaymentMethod ?? 'razorpay'; // Fallback to razorpay
+                paymentMethod =
+                    _lastPaymentMethod ?? 'razorpay'; // Fallback to razorpay
               }
             }
           }
-          
+
           // CRITICAL FIX: Extract actual user_id from JWT token, not guest_id
           String userId = '';
           try {
@@ -559,10 +594,12 @@ class MyInAppBrowser extends InAppBrowser {
                     while (normalizedPayload.length % 4 != 0) {
                       normalizedPayload += '=';
                     }
-                    final decoded = utf8.decode(base64Decode(normalizedPayload));
+                    final decoded =
+                        utf8.decode(base64Decode(normalizedPayload));
                     final Map<String, dynamic> tokenData = jsonDecode(decoded);
                     userId = tokenData['sub']?.toString() ?? '';
-                    debugPrint('\x1B[32m[PAYMENT_SUCCESS] Extracted real user_id from token: $userId\x1B[0m');
+                    debugPrint(
+                        '\x1B[32m[PAYMENT_SUCCESS] Extracted real user_id from token: $userId\x1B[0m');
                   }
                 }
               }
@@ -571,49 +608,67 @@ class MyInAppBrowser extends InAppBrowser {
             debugPrint('[PAYMENT_SUCCESS][ERR] Failed to extract user_id: $e');
             userId = Get.find<SplashController>().getGuestId();
           }
-          
+
           // Additional debug for payment method extraction
-          debugPrint("\x1B[32mDEBUG: Payment method extraction - path: $path\x1B[0m");
+          debugPrint(
+              "\x1B[32mDEBUG: Payment method extraction - path: $path\x1B[0m");
           debugPrint("DEBUG: Query params method: ${qp['method']}");
-          debugPrint("DEBUG: Query params payment_method: ${qp['payment_method']}");
-          debugPrint("\x1B[32mDEBUG: Final paymentMethod: $paymentMethod\x1B[0m");
+          debugPrint(
+              "DEBUG: Query params payment_method: ${qp['payment_method']}");
+          debugPrint(
+              "\x1B[32mDEBUG: Final paymentMethod: $paymentMethod\x1B[0m");
 
           print("\x1B[32mDEBUG: Extracted token: $token\x1B[0m");
-          print("\x1B[32mDEBUG: Extracted transactionId: $transactionId\x1B[0m");
-          print("\x1B[32mDEBUG: Extracted paymentMethod: $paymentMethod\x1B[0m");
+          print(
+              "\x1B[32mDEBUG: Extracted transactionId: $transactionId\x1B[0m");
+          print(
+              "\x1B[32mDEBUG: Extracted paymentMethod: $paymentMethod\x1B[0m");
           print("\x1B[32mDEBUG: Using user_id: $userId\x1B[0m");
-          
+
           // CRITICAL: Immediately call the subscription creation API
-          if (subscriptionId != null && subscriptionId!.isNotEmpty && userId.isNotEmpty) {
-            final int numericSubscriptionId = int.tryParse(subscriptionId!) ?? 26;
-            final double amount = double.tryParse(subscriptionAmount ?? '2499') ?? 2499.0;
-            
-            debugPrint('\x1B[32m[PAYMENT_SUCCESS] Immediately creating subscription in backend\x1B[0m');
-            debugPrint('\x1B[32m[PAYMENT_SUCCESS] subscription_id: $numericSubscriptionId, amount: $amount, user_id: $userId\x1B[0m');
-            
+          if (subscriptionId != null &&
+              subscriptionId!.isNotEmpty &&
+              userId.isNotEmpty) {
+            final int numericSubscriptionId =
+                int.tryParse(subscriptionId!) ?? 26;
+            final double amount =
+                double.tryParse(subscriptionAmount ?? '2499') ?? 2499.0;
+
+            debugPrint(
+                '\x1B[32m[PAYMENT_SUCCESS] Immediately creating subscription in backend\x1B[0m');
+            debugPrint(
+                '\x1B[32m[PAYMENT_SUCCESS] subscription_id: $numericSubscriptionId, amount: $amount, user_id: $userId\x1B[0m');
+
             // Call the subscription controller to handle payment success immediately
             try {
               final subscriptionController = Get.find<SubscriptionController>();
-              
+
               // Force update subscription status immediately
               Future.microtask(() async {
                 try {
-                  await subscriptionController.forceUpdateSubscriptionStatus(numericSubscriptionId, true);
-                  debugPrint('\x1B[32m[PAYMENT_SUCCESS] Local status updated immediately\x1B[0m');
-                  
+                  await subscriptionController.forceUpdateSubscriptionStatus(
+                      numericSubscriptionId, true);
+                  debugPrint(
+                      '\x1B[32m[PAYMENT_SUCCESS] Local status updated immediately\x1B[0m');
+
                   // Then handle the full payment success flow
                   await subscriptionController.handlePaymentSuccess(
                     subscriptionId: numericSubscriptionId,
                     userId: userId,
-                    transactionId: transactionId.isNotEmpty ? transactionId : 'razorpay_${DateTime.now().millisecondsSinceEpoch}',
+                    transactionId: transactionId.isNotEmpty
+                        ? transactionId
+                        : 'razorpay_${DateTime.now().millisecondsSinceEpoch}',
                   );
-                  debugPrint('\x1B[32m[PAYMENT_SUCCESS] Backend subscription creation completed\x1B[0m');
+                  debugPrint(
+                      '\x1B[32m[PAYMENT_SUCCESS] Backend subscription creation completed\x1B[0m');
                 } catch (e) {
-                  debugPrint('[PAYMENT_SUCCESS][ERR] Error in payment success handling: $e');
+                  debugPrint(
+                      '[PAYMENT_SUCCESS][ERR] Error in payment success handling: $e');
                 }
               });
             } catch (e) {
-              debugPrint('[PAYMENT_SUCCESS][ERR] Error getting subscription controller: $e');
+              debugPrint(
+                  '[PAYMENT_SUCCESS][ERR] Error getting subscription controller: $e');
             }
           }
 

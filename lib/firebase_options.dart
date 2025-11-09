@@ -47,28 +47,26 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDQqrye3mW1Ol6KsSb2XXeZPm5IlGou0F8',
-    appId: '1:1024512016620:web:0ddc3d73510d495f05a5c9',
-    messagingSenderId: '1024512016620',
-    projectId: 'housecraft-bd864',
-    authDomain: 'housecraft-bd864.firebaseapp.com',
-    storageBucket: 'housecraft-bd864.firebasestorage.app',
-  );
+      apiKey: "AIzaSyDQqrye3mW1Ol6KsSb2XXeZPm5IlGou0F8",
+      authDomain: "housecraft-bd864.firebaseapp.com",
+      projectId: "housecraft-bd864",
+      storageBucket: "housecraft-bd864.firebasestorage.app",
+      messagingSenderId: "1024512016620",
+      appId: "1:1024512016620:web:5ead8ae8621c656105a5c9");
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBO413sTw8QxVBOglAVNXyyDHm_BBvwRwM',
-    appId: '1:1024512016620:android:de220d620bfbd49105a5c9',
-    messagingSenderId: '1024512016620',
-    projectId: 'housecraft-bd864',
-    storageBucket: 'housecraft-bd864.firebasestorage.app',
-  );
+      apiKey: "AIzaSyBRm0BwPdCN5fysWybkrlQkf5nYYX2_asw",
+      authDomain: "makesmyhomeuser.firebaseapp.com",
+      projectId: "makesmyhomeuser",
+      storageBucket: "makesmyhomeuser.firebasestorage.app",
+      messagingSenderId: "540954631359",
+      appId: "1:540954631359:android:3f0f563574b9cc6a907a0a");
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCXAaMcwhQ-5PkIB7ISdFwLXjulJcN5fME',
-    appId: '1:1024512016620:ios:9b126fe7575b97e705a5c9',
-    messagingSenderId: '1024512016620',
-    projectId: 'housecraft-bd864',
-    storageBucket: 'housecraft-bd864.firebasestorage.app',
-    iosBundleId: 'com.sixamtech.demandium.user',
-  );
+      apiKey: "AIzaSyBO413sTw8QxVBOglAVNXyyDHm_BBvwRwM",
+      authDomain: "housecraft-bd864.firebaseapp.com",
+      projectId: "housecraft-bd864",
+      storageBucket: "housecraft-bd864.firebasestorage.app",
+      messagingSenderId: "1024512016620",
+      appId: "1:1024512016620:ios:bqeh1182qf5l4ehuhdu5025ls55dc08d");
 }

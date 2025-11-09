@@ -1,6 +1,6 @@
-# # Specific exclusions
-public_html.zip
-public_html
+# # # Specific exclusions
+# public_html.zip
+# public_html
 
 # General exclusions
 *.zip

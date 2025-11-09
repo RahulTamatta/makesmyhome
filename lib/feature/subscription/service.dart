@@ -264,33 +264,34 @@ class SubscriptionService {
       // For web, use ApiClient to handle CORS properly
       // For mobile, use direct HTTP request
       http.Response response;
-      
+
       if (kIsWeb) {
         try {
           // Use ApiClient for web CORS handling
           final apiClient = Get.find<ApiClient>();
           debugPrint('[SUBS_WITH_CTX][WEB] Using ApiClient for CORS handling');
-          
+
           final apiResponse = await apiClient.postData(
             AppConstants.subscriptionUri,
             body,
           );
-          
-          debugPrint('[SUBS_WITH_CTX][WEB] ApiClient response: ${apiResponse.statusCode}');
-          debugPrint('[SUBS_WITH_CTX][WEB] ApiClient body: ${apiResponse.body}');
-          
+
+          debugPrint(
+              '[SUBS_WITH_CTX][WEB] ApiClient response: ${apiResponse.statusCode}');
+          debugPrint(
+              '[SUBS_WITH_CTX][WEB] ApiClient body: ${apiResponse.body}');
+
           // Convert ApiClient response to http.Response format
           response = http.Response(
             jsonEncode(apiResponse.body),
             apiResponse.statusCode ?? 200,
             headers: {'content-type': 'application/json'},
           );
-          
         } catch (e) {
           debugPrint('[SUBS_WITH_CTX][WEB] ApiClient failed: $e');
           // For web, if POST fails due to CORS, fall back to GET
           debugPrint('[SUBS_WITH_CTX][FALLBACK] Trying GET method as fallback');
-          
+
           // Add delay to prevent rapid retries
           await Future.delayed(Duration(milliseconds: 500));
           return await getSubscriptions(); // Use existing GET method
@@ -305,7 +306,7 @@ class SubscriptionService {
           ),
           'GET_SUBSCRIPTIONS_WITH_USER_CONTEXT',
         );
-      } 
+      }
       debugPrint('[SUBS_WITH_CTX][RES] Status: ${response.statusCode}');
       debugPrint('[SUBS_WITH_CTX][RES] Body: ${response.body}');
 
@@ -358,9 +359,11 @@ class SubscriptionService {
     required String userId,
   }) async {
     // CRITICAL: This is the exact API call after successful Razorpay payment
-    debugPrint('\x1B[32m[RAZORPAY_SUCCESS] Creating subscription after successful payment\x1B[0m');
-    debugPrint('[moshi mosh] [RAZORPAY_SUCCESS] subscription_id: $subscriptionId, amount: $amount, user_id: $userId, transaction_id: $transactionId');
-    
+    debugPrint(
+        '\x1B[32m[RAZORPAY_SUCCESS] Creating subscription after successful payment\x1B[0m');
+    debugPrint(
+        '[moshi mosh] [RAZORPAY_SUCCESS] subscription_id: $subscriptionId, amount: $amount, user_id: $userId, transaction_id: $transactionId');
+
     // Validate required fields
     if (subscriptionId <= 0) {
       debugPrint('[SUBSCRIBE][ERR] Invalid subscription_id: $subscriptionId');
@@ -397,15 +400,17 @@ class SubscriptionService {
               final decoded = utf8.decode(base64Decode(normalizedPayload));
               final Map<String, dynamic> tokenData = jsonDecode(decoded);
               actualUserId = tokenData['sub']?.toString() ?? userId;
-              debugPrint('\x1B[32m[SUBSCRIBE][USER_FIX] Extracted real user_id from token: $actualUserId\x1B[0m');
+              debugPrint(
+                  '\x1B[32m[SUBSCRIBE][USER_FIX] Extracted real user_id from token: $actualUserId\x1B[0m');
             }
           }
         }
       } catch (e) {
-        debugPrint('[SUBSCRIBE][USER_FIX][ERR] Failed to extract user_id from token: $e');
+        debugPrint(
+            '[SUBSCRIBE][USER_FIX][ERR] Failed to extract user_id from token: $e');
       }
     }
-    
+
     final Map<String, dynamic> payload = {
       'subscription_id': subscriptionId,
       'amount': amount,
@@ -419,13 +424,15 @@ class SubscriptionService {
     };
 
     final body = json.encode(payload);
-    final fullUrl = 'https://housecraft.online/api/subscriptionmodule/subscriptions';
-    
+    final fullUrl =
+        'https://housecraft.online/api/subscriptionmodule/subscriptions';
+
     debugPrint('\x1B[32m[SUBSCRIBE][REQ] POST $fullUrl\x1B[0m');
     debugPrint('\x1B[32m[SUBSCRIBE][REQ] Payload: $body\x1B[0m');
     debugPrint('[SUBSCRIBE][REQ] Headers: ${headers}');
     debugPrint('[moshi mosh] [API_CALL] calling_subscription_creation_api');
-    debugPrint('\x1B[32m[SUBSCRIBE][CRITICAL] Using user_id: $actualUserId (was: $userId)\x1B[0m');
+    debugPrint(
+        '\x1B[32m[SUBSCRIBE][CRITICAL] Using user_id: $actualUserId (was: $userId)\x1B[0m');
 
     try {
       if (kIsWeb) {
@@ -436,28 +443,36 @@ class SubscriptionService {
             AppConstants.subscriptionUri,
             payload,
           );
-          debugPrint('\x1B[32m[SUBSCRIBE][WEB] Response Status: ${apiResponse.statusCode}\x1B[0m');
-          debugPrint('\x1B[32m[SUBSCRIBE][WEB] Response Body: ${apiResponse.body}\x1B[0m');
-          debugPrint('[moshi mosh] [API_RESPONSE] status: ${apiResponse.statusCode}, body: ${apiResponse.body}');
-          
+          debugPrint(
+              '\x1B[32m[SUBSCRIBE][WEB] Response Status: ${apiResponse.statusCode}\x1B[0m');
+          debugPrint(
+              '\x1B[32m[SUBSCRIBE][WEB] Response Body: ${apiResponse.body}\x1B[0m');
+          debugPrint(
+              '[moshi mosh] [API_RESPONSE] status: ${apiResponse.statusCode}, body: ${apiResponse.body}');
+
           final status = apiResponse.statusCode ?? 0;
           if (status == 200 || status == 201) {
-            debugPrint('\x1B[32m[SUBSCRIBE][WEB] ✅ Subscription created successfully in backend!\x1B[0m');
-            debugPrint('[moshi mosh] [SUBSCRIPTION_CREATED] backend_success: true, subscription_id: $subscriptionId');
-            
+            debugPrint(
+                '\x1B[32m[SUBSCRIBE][WEB] ✅ Subscription created successfully in backend!\x1B[0m');
+            debugPrint(
+                '[moshi mosh] [SUBSCRIPTION_CREATED] backend_success: true, subscription_id: $subscriptionId');
+
             // Parse and log the response details
             try {
               final responseData = apiResponse.body;
-              debugPrint('\x1B[32m[SUBSCRIBE][WEB] Backend Response Data: $responseData\x1B[0m');
+              debugPrint(
+                  '\x1B[32m[SUBSCRIBE][WEB] Backend Response Data: $responseData\x1B[0m');
             } catch (e) {
               debugPrint('[SUBSCRIBE][WEB][WARN] Could not parse response: $e');
             }
-            
+
             return true;
           } else {
             debugPrint('[SUBSCRIBE][WEB][ERR] ❌ Server error status: $status');
-            debugPrint('[SUBSCRIBE][WEB][ERR] Error response: ${apiResponse.body}');
-            debugPrint('[moshi mosh] [SUBSCRIPTION_FAILED] backend_error: status_$status');
+            debugPrint(
+                '[SUBSCRIBE][WEB][ERR] Error response: ${apiResponse.body}');
+            debugPrint(
+                '[moshi mosh] [SUBSCRIPTION_FAILED] backend_error: status_$status');
             return false;
           }
         } catch (e) {
@@ -470,35 +485,45 @@ class SubscriptionService {
       // CRITICAL FIX: Use the full URL to avoid any routing issues
       final response = await _makeRequest(
         () => http.post(
-          Uri.parse('https://housecraft.online/api/subscriptionmodule/subscriptions'),
+          Uri.parse(
+              'https://housecraft.online/api/subscriptionmodule/subscriptions'),
           headers: headers,
           body: body,
         ),
         'SUBSCRIBE_TO_SERVICE',
       );
 
-      debugPrint('\x1B[32m[SUBSCRIBE][RES] Response Status: ${response.statusCode}\x1B[0m');
-      debugPrint('\x1B[32m[SUBSCRIBE][RES] Response Body: ${response.body}\x1B[0m');
-      debugPrint('[moshi mosh] [API_RESPONSE] status: ${response.statusCode}, body: ${response.body}');
+      debugPrint(
+          '\x1B[32m[SUBSCRIBE][RES] Response Status: ${response.statusCode}\x1B[0m');
+      debugPrint(
+          '\x1B[32m[SUBSCRIBE][RES] Response Body: ${response.body}\x1B[0m');
+      debugPrint(
+          '[moshi mosh] [API_RESPONSE] status: ${response.statusCode}, body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('\x1B[32m[SUBSCRIBE][SUCCESS] ✅ Subscription created successfully in backend!\x1B[0m');
-        debugPrint('[moshi mosh] [SUBSCRIPTION_CREATED] backend_success: true, subscription_id: $subscriptionId');
+        debugPrint(
+            '\x1B[32m[SUBSCRIBE][SUCCESS] ✅ Subscription created successfully in backend!\x1B[0m');
+        debugPrint(
+            '[moshi mosh] [SUBSCRIPTION_CREATED] backend_success: true, subscription_id: $subscriptionId');
 
         // Parse response to get subscription details if available
         try {
           final responseData = json.decode(response.body);
-          debugPrint('\x1B[32m[SUBSCRIBE][SUCCESS] Backend Response Data: $responseData\x1B[0m');
-          debugPrint('[moshi mosh] [BACKEND_RESPONSE] parsed_data: $responseData');
+          debugPrint(
+              '\x1B[32m[SUBSCRIBE][SUCCESS] Backend Response Data: $responseData\x1B[0m');
+          debugPrint(
+              '[moshi mosh] [BACKEND_RESPONSE] parsed_data: $responseData');
         } catch (e) {
           debugPrint('[SUBSCRIBE][WARN] Could not parse response JSON: $e');
         }
 
         return true;
       } else {
-        debugPrint('[SUBSCRIBE][ERR] ❌ Server returned error status: ${response.statusCode}');
+        debugPrint(
+            '[SUBSCRIBE][ERR] ❌ Server returned error status: ${response.statusCode}');
         debugPrint('[SUBSCRIBE][ERR] Error response: ${response.body}');
-        debugPrint('[moshi mosh] [SUBSCRIPTION_FAILED] backend_error: status_${response.statusCode}');
+        debugPrint(
+            '[moshi mosh] [SUBSCRIPTION_FAILED] backend_error: status_${response.statusCode}');
         return false;
       }
     } catch (e, stackTrace) {
