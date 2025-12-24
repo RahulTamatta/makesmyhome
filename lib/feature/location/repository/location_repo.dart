@@ -7,11 +7,13 @@ class LocationRepo {
   LocationRepo({required this.apiClient, required this.sharedPreferences});
 
   Future<Response> getAllAddress() async {
-    return await apiClient.getData("${AppConstants.addressUri}?limit=100&offset=1&guest_id=${Get.find<SplashController>().getGuestId()}");
+    return await apiClient.getData(
+        "${AppConstants.addressUri}?limit=100&offset=1&guest_id=${Get.find<SplashController>().getGuestId()}");
   }
 
   Future<Response> getZone(String lat, String lng) async {
-    return await apiClient.getData('${AppConstants.zoneUri}?lat=$lat&lng=$lng',headers: AppConstants.configHeader);
+    return await apiClient.getData('${AppConstants.zoneUri}?lat=$lat&lng=$lng',
+        headers: AppConstants.configHeader);
   }
 
   Future<Response> removeAddressByID(String id) async {
@@ -22,33 +24,43 @@ class LocationRepo {
   }
 
   Future<Response> addAddress(AddressModel addressModel) async {
-    return await apiClient.postData("${AppConstants.addressUri}?guest_id=${Get.find<SplashController>().getGuestId()}", addressModel.toJson());
+    return await apiClient.postData(
+        "${AppConstants.addressUri}?guest_id=${Get.find<SplashController>().getGuestId()}",
+        addressModel.toJson());
   }
 
-  Future<Response> updateAddress(AddressModel addressModel, String addressId) async {
-    return await apiClient.putData('${AppConstants.addressUri}/$addressId?guest_id=${Get.find<SplashController>().getGuestId()}', addressModel.toJson());
+  Future<Response> updateAddress(
+      AddressModel addressModel, String addressId) async {
+    return await apiClient.putData(
+        '${AppConstants.addressUri}/$addressId?guest_id=${Get.find<SplashController>().getGuestId()}',
+        addressModel.toJson());
   }
 
   Future<bool> saveUserAddress(String address, String? zoneIDs) async {
     // Store zone ID in SharedPreferences so it can be retrieved later
     if (zoneIDs != null) {
       await sharedPreferences.setString(AppConstants.zoneId, zoneIDs);
-      debugPrint('LocationController: Zone ID stored in SharedPreferences: $zoneIDs');
+      debugPrint(
+          'LocationController: Zone ID stored in SharedPreferences: $zoneIDs');
     }
-    
+
+    final token = sharedPreferences.getString(AppConstants.token);
+    final hasToken = (token ?? '').isNotEmpty;
     apiClient.updateHeader(
-      sharedPreferences.getString(AppConstants.token), zoneIDs,
-      sharedPreferences.getString(AppConstants.languageCode),
-      sharedPreferences.getString(AppConstants.guestId)
-    );
+        token,
+        zoneIDs,
+        sharedPreferences.getString(AppConstants.languageCode),
+        hasToken ? null : sharedPreferences.getString(AppConstants.guestId));
     return await sharedPreferences.setString(AppConstants.userAddress, address);
   }
 
-
-
   Future<Response> getAddressFromGeocode(LatLng? latLng) async {
-
-    return await apiClient.getData('${AppConstants.geocodeUri}?lat=${latLng!.latitude}&lng=${latLng.longitude}',headers: AppConstants.configHeader);
+    if (latLng == null) {
+      return Response(statusCode: 0, statusText: 'Invalid coordinates');
+    }
+    return await apiClient.getData(
+        '${AppConstants.geocodeUri}?lat=${latLng.latitude}&lng=${latLng.longitude}',
+        headers: AppConstants.configHeader);
   }
 
   String? getUserAddress() {
@@ -69,20 +81,17 @@ class LocationRepo {
     );
   }
 
-  Future<Response> changePostServiceAddress(String postId, String addressId) async {
-    return await apiClient.postData(AppConstants.updatePostInfo,{
-      "_method":"put",
-      "post_id":postId,
-      "service_address_id": addressId
-    });
+  Future<Response> changePostServiceAddress(
+      String postId, String addressId) async {
+    return await apiClient.postData(AppConstants.updatePostInfo,
+        {"_method": "put", "post_id": postId, "service_address_id": addressId});
   }
 
-  Future<void>  setZoneContinue(String isContinue) async {
+  Future<void> setZoneContinue(String isContinue) async {
     await sharedPreferences.setString(AppConstants.isContinueZone, isContinue);
   }
 
   String getZoneContinue() {
     return sharedPreferences.getString(AppConstants.isContinueZone) ?? "";
   }
-
 }

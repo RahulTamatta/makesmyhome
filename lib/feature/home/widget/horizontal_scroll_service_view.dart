@@ -1,48 +1,54 @@
 import 'package:get/get.dart';
 import 'package:makesmyhome/utils/core_export.dart';
+import 'package:makesmyhome/feature/cr_mode/controller/cr_mode_controller.dart';
 
 class HorizontalScrollServiceView extends GetView<ServiceController> {
   final String? fromPage;
   final List<Service>? serviceList;
-  const HorizontalScrollServiceView({super.key, required this.fromPage,required this.serviceList});
+  const HorizontalScrollServiceView(
+      {super.key, required this.fromPage, required this.serviceList});
   @override
   Widget build(BuildContext context) {
-
     bool isLtr = Get.find<LocalizationController>().isLtr;
 
     ScrollController scrollController = ScrollController();
-    if(serviceList != null && serviceList!.isEmpty){
+    if (serviceList != null && serviceList!.isEmpty) {
       return const SizedBox();
-    }else{
-      if(serviceList!= null){
+    } else {
+      if (serviceList != null) {
         return Stack(
           children: [
-            fromPage=='recently_view_services'
-            ? ClipPath(
-              clipper: TsClip2(),
-              child: Container(
-                width: double.infinity,
-                height: 200,
-                color: Theme.of(context).primaryColor,
-              ),
-            ): fromPage == 'popular_services' ?
-            Container(height: isLtr ? 320 : 335,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07),
-                image: DecorationImage(
-                  image: AssetImage(
-                   Images.popularServicesBackgroundImage
-                  ),
-                  fit: BoxFit.cover,
-                  opacity: 0.5
-                ),
-              ),
-            ): const SizedBox(),
-
+            fromPage == 'recently_view_services'
+                ? ClipPath(
+                    clipper: TsClip2(),
+                    child: Container(
+                      width: double.infinity,
+                      height: 200,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  )
+                : fromPage == 'popular_services'
+                    ? Container(
+                        height: isLtr ? 320 : 335,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.07),
+                          image: DecorationImage(
+                              image: AssetImage(
+                                  Images.popularServicesBackgroundImage),
+                              fit: BoxFit.cover,
+                              opacity: 0.5),
+                        ),
+                      )
+                    : const SizedBox(),
             Column(
               children: [
-                const SizedBox(height: Dimensions.paddingSizeSmall,),
+                const SizedBox(
+                  height: Dimensions.paddingSizeSmall,
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Dimensions.paddingSizeDefault,
@@ -50,56 +56,102 @@ class HorizontalScrollServiceView extends GetView<ServiceController> {
                     Dimensions.paddingSizeDefault,
                     Dimensions.paddingSizeExtraSmall,
                   ),
-                  child: TitleWidget(
-                    textDecoration: TextDecoration.underline,
-                    title: fromPage!,
-                    onTap: () => fromPage == "popular_services" ? Get.toNamed(RouteHelper.getSearchResultRoute(fromPage: "popular")) : Get.toNamed(RouteHelper.allServiceScreenRoute(fromPage!)),
+                  child: GetBuilder<CrModeController>(builder: (crCtrl) {
+                    String computedTitle = fromPage ?? '';
+                    final bool isCr = crCtrl.isCrMode;
 
-                  ),
+                    if (isCr && (serviceList?.isNotEmpty ?? false)) {
+                      final svc = serviceList!.first;
+                      String? title;
+                      final parentId = svc.category?.parentId;
+                      // Prefer parent category name when present
+                      if (parentId != null &&
+                          parentId.isNotEmpty &&
+                          Get.isRegistered<CategoryController>()) {
+                        final cats =
+                            Get.find<CategoryController>().categoryList;
+                        final parent =
+                            cats?.firstWhereOrNull((c) => c.id == parentId);
+                        title = parent?.name;
+                      }
+                      title ??= svc
+                          .category?.name; // fallback to current category name
+                      computedTitle = (title?.isNotEmpty ?? false)
+                          ? title!
+                          : 'construction_and_renovation_services';
+                    }
+                    return TitleWidget(
+                      textDecoration: TextDecoration.underline,
+                      title: computedTitle,
+                      onTap: () => fromPage == "popular_services"
+                          ? Get.toNamed(RouteHelper.getSearchResultRoute(
+                              fromPage: "popular"))
+                          : Get.toNamed(RouteHelper.allServiceScreenRoute(
+                              fromPage ?? 'all_service')),
+                    );
+                  }),
                 ),
                 SizedBox(
-                  height: Get.find<LocalizationController>().isLtr ? ResponsiveHelper.isMobile(context) ? 260 : 270 :  270,
-                  child:ListView.builder(
+                  height: Get.find<LocalizationController>().isLtr
+                      ? ResponsiveHelper.isMobile(context)
+                          ? 260
+                          : 270
+                      : 270,
+                  child: ListView.builder(
                     controller: scrollController,
                     physics: const ClampingScrollPhysics(),
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(left: Dimensions.paddingSizeDefault,bottom: Dimensions.paddingSizeExtraSmall,top: Dimensions.paddingSizeExtraSmall),
-                    itemCount: serviceList!.length > 10 ? 10 : serviceList!.length,
-                    itemBuilder: (context, index){
-                      return Padding(padding: const EdgeInsets.only(right: Dimensions.paddingSizeSmall + 2),
+                    padding: const EdgeInsets.only(
+                        left: Dimensions.paddingSizeDefault,
+                        bottom: Dimensions.paddingSizeExtraSmall,
+                        top: Dimensions.paddingSizeExtraSmall),
+                    itemCount:
+                        serviceList!.length > 10 ? 10 : serviceList!.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            right: Dimensions.paddingSizeSmall + 2),
                         child: SizedBox(
-                          width: ResponsiveHelper.isTab(context)? 250 : Get.width / 2.3,
-                          child: ServiceWidgetVertical(service: serviceList![index], fromType: '',fromPage: fromPage??""),
+                          width: ResponsiveHelper.isTab(context)
+                              ? 250
+                              : Get.width / 2.3,
+                          child: ServiceWidgetVertical(
+                              service: serviceList![index],
+                              fromType: '',
+                              fromPage: fromPage ?? ""),
                         ),
                       );
                     },
-                  ) ,
+                  ),
                 ),
-                const SizedBox(height: Dimensions.paddingSizeDefault,)
+                const SizedBox(
+                  height: Dimensions.paddingSizeDefault,
+                )
               ],
             ),
           ],
         );
-      }
-      else{
-        return const PopularServiceShimmer(enabled: true,);
+      } else {
+        return const PopularServiceShimmer(
+          enabled: true,
+        );
       }
     }
   }
 }
 
-
 class TsClip2 extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    path.lineTo(0, size.height/2);
+    path.lineTo(0, size.height / 2);
     path.quadraticBezierTo(
-        size.width / 1.3, size.height+70, size.width, size.height/1.3);
+        size.width / 1.3, size.height + 70, size.width, size.height / 1.3);
     path.lineTo(size.width, 0);
     path.close();
     return path;
   }
+
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
@@ -116,47 +168,71 @@ class PopularServiceShimmer extends StatelessWidget {
         shrinkWrap: true,
         physics: const BouncingScrollPhysics(),
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(right: Dimensions.paddingSizeSmall,left: Dimensions.paddingSizeSmall,top: Dimensions.paddingSizeSmall,),
+        padding: const EdgeInsets.only(
+          right: Dimensions.paddingSizeSmall,
+          left: Dimensions.paddingSizeSmall,
+          top: Dimensions.paddingSizeSmall,
+        ),
         itemCount: 10,
-        itemBuilder: (context, index){
+        itemBuilder: (context, index) {
           return Container(
-            height: 80, width: ResponsiveHelper.isTab(context)? 250 : Get.width / 2.3,
-            margin: const EdgeInsets.only(right: Dimensions.paddingSizeSmall,bottom: 10,top: 10),
+            height: 80,
+            width: ResponsiveHelper.isTab(context) ? 250 : Get.width / 2.3,
+            margin: const EdgeInsets.only(
+                right: Dimensions.paddingSizeSmall, bottom: 10, top: 10),
             padding: const EdgeInsets.all(Dimensions.paddingSizeExtraSmall),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
-              boxShadow: Get.isDarkMode?null:[BoxShadow(color: Colors.grey[300]!, blurRadius: 10, spreadRadius: 1)],
+              boxShadow: Get.isDarkMode
+                  ? null
+                  : [
+                      BoxShadow(
+                          color: Colors.grey[300]!,
+                          blurRadius: 10,
+                          spreadRadius: 1)
+                    ],
             ),
             child: Shimmer(
               duration: const Duration(seconds: 1),
               interval: const Duration(seconds: 1),
               enabled: enabled,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-
-                Container(
-                  height: 70,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
-                      color: Theme.of(context).shadowColor
-                  ),
-                ),
-
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Dimensions.paddingSizeExtraSmall),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Container(height: 15, width: 100, color: Theme.of(context).shadowColor),
-                      const SizedBox(height: 5),
-                      Container(height: 10, width: 130, color: Theme.of(context).shadowColor),
-                      const SizedBox(height: 5),
-                      Container(height: 10, width: 130, color: Theme.of(context).shadowColor),
-
-                    ]),
-                  ),
-                ),
-
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 70,
+                      decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(Dimensions.radiusSmall),
+                          color: Theme.of(context).shadowColor),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                            Dimensions.paddingSizeExtraSmall),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                  height: 15,
+                                  width: 100,
+                                  color: Theme.of(context).shadowColor),
+                              const SizedBox(height: 5),
+                              Container(
+                                  height: 10,
+                                  width: 130,
+                                  color: Theme.of(context).shadowColor),
+                              const SizedBox(height: 5),
+                              Container(
+                                  height: 10,
+                                  width: 130,
+                                  color: Theme.of(context).shadowColor),
+                            ]),
+                      ),
+                    ),
+                  ]),
             ),
           );
         },
@@ -164,4 +240,3 @@ class PopularServiceShimmer extends StatelessWidget {
     );
   }
 }
-

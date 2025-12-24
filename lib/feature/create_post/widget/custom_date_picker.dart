@@ -20,6 +20,7 @@ class CustomDatePicker extends StatelessWidget {
             if(args.value !=null){
               scheduleController.selectedDate =  DateFormat('yyyy-MM-dd').format(args.value);
               scheduleController.updateScheduleType(scheduleType: ScheduleType.schedule);
+              scheduleController.fetchAvailabilityAuto();
             }
           },
           initialSelectedDate: scheduleController.getSelectedDateTime(),

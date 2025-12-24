@@ -1,4 +1,5 @@
 import 'package:makesmyhome/utils/core_export.dart';
+import 'package:makesmyhome/feature/cr_mode/controller/cr_mode_controller.dart';
 import 'package:get/get.dart';
 import 'package:makesmyhome/feature/subscription/view/subscription_screen.dart';
 import 'package:makesmyhome/feature/autocare/view/autocare_main_screen.dart';
@@ -46,7 +47,6 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final padding = MediaQuery.of(context).padding;
     bool isUserLoggedIn = Get.find<AuthController>().isLoggedIn();
 
     return CustomPopScopeWidget(
@@ -70,21 +70,66 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
         }
       },
       child: Scaffold(
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: GetBuilder<CrModeController>(builder: (crCtrl) {
+          final bool enabled = crCtrl.isEnabled;
+          final bool isCr = crCtrl.isCrMode;
+          return FloatingActionButton(
+            heroTag: 'crModeFab',
+            onPressed: () async {
+              bool nowEnabled = enabled;
+              if (!nowEnabled) {
+                // Try refreshing config from server in case local cache is stale
+                try {
+                  await Get.find<SplashController>().getConfigData();
+                  nowEnabled = Get.find<CrModeController>().isEnabled;
+                  if (!nowEnabled) {
+                    final crFlagExists = Get.find<SplashController>()
+                            .configModel
+                            .content
+                            ?.crModuleEnabled !=
+                        null;
+                    if (!crFlagExists) {
+                      Get.find<CrModeController>()
+                          .setServerEnabled(true, persistState: false);
+                      nowEnabled = true;
+                    }
+                  }
+                } catch (_) {}
+              }
+              if (!nowEnabled) {
+                customSnackBar('Construction & Renovation is disabled by admin',
+                    type: ToasterMessageType.error);
+                return;
+              }
+              crCtrl.toggleCrMode();
+              Get.find<BottomNavController>().changePage(BnbItem.homePage);
+              customSnackBar(
+                isCr ? 'Switched to Quick Work' : 'Switched to Construction',
+                type: ToasterMessageType.success,
+              );
+            },
+            backgroundColor:
+                enabled ? Theme.of(context).primaryColor : Colors.grey,
+            child: Icon(
+              Icons.menu_book,
+              color: Colors.white,
+            ),
+          );
+        }),
         bottomNavigationBar: ResponsiveHelper.isDesktop(context)
             ? const SizedBox()
-            : Container(
-                padding: EdgeInsets.only(
-                  top: Dimensions.paddingSizeDefault,
-                  bottom:
-                      padding.bottom > 15 ? 0 : Dimensions.paddingSizeDefault,
-                ),
+            : BottomAppBar(
+                shape: const CircularNotchedRectangle(),
+                notchMargin: 8,
                 color: Get.isDarkMode
-                    ? Theme.of(context).cardColor.withValues(alpha: .5)
+                    ? Theme.of(context).cardColor.withOpacity(.5)
                     : Theme.of(context).primaryColor,
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: Dimensions.paddingSizeExtraSmall),
+                        horizontal: Dimensions.paddingSizeExtraSmall,
+                        vertical: Dimensions.paddingSizeDefault),
                     child: Row(children: [
                       _bnbItem(
                         icon: Images.home,
@@ -114,15 +159,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
                           }
                         },
                       ),
-                      _bnbItem(
-                        icon: Images.cart,
-                        bnbItem: BnbItem.cart,
-                        context: context,
-                        onTap: () {
-                          Get.find<BottomNavController>()
-                              .changePage(BnbItem.cart);
-                        },
-                      ),
+                      const SizedBox(width: 56),
                       _bnbItem(
                         icon: Icons.subscriptions_rounded,
                         bnbItem: BnbItem.subscription,

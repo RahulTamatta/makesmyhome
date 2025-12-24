@@ -11,8 +11,9 @@ class ConfigModel {
   ConfigModel.fromJson(Map<String, dynamic> json) {
     responseCode = json['response_code'];
     message = json['message'];
-    content =
-    json['content'] != null ? ConfigContent.fromJson(json['content']) : null;
+    content = json['content'] != null
+        ? ConfigContent.fromJson(json['content'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -95,76 +96,76 @@ class ConfigContent {
   int? serviceAtProviderLocation;
   String? newsletterTitle;
   String? newsletterDescription;
-
+  int? crModuleEnabled;
 
   ConfigContent(
       {this.businessName,
-        this.logo,
-        this.logoFullPath,
-        this.favicon,
-        this.faviconFullPath,
-        this.providerSelfRegistration,
-        this.countryCode,
-        this.businessAddress,
-        this.businessPhone,
-        this.businessEmail,
-        this.currencyDecimalPoint,
-        this.currencySymbolPosition,
-        this.privacyPolicy,
-        this.cancellationPolicy,
-        this.refundPolicy,
-        this.aboutUs,
-        this.defaultLocation,
-        this.appUrlAndroid,
-        this.appUrlIos,
-        this.smsVerification,
-        this.paginationLimit,
-        this.timeFormat,
-        this.paymentMethodList,
-        this.minimumVersion,
-        this.footerText,
-        this.phoneNumberVisibility,
-        this.walletStatus,
-        this.addFundToWallet,
-        this.loyaltyPointStatus,
-        this.referEarnStatus,
-        this.biddingStatus,
-        this.cookiesText,
-        this.phoneVerification,
-        this.emailVerification,
-        this.directProviderBooking,
-        this.cashAfterService,
-        this.digitalPayment,
-        this.forgetPasswordVerificationMethod,
-        this.socialMedia,
-        this.resentOtpTime,
-        this.minBookingAmount,
-        this.maxBookingAmount,
-        this.guestCheckout,
-        this.offlinePayment,
-        this.partialPayment,
-        this.additionalChargeLabelName,
-        this.additionalChargeFeeAmount,
-        this.additionalCharge,
-        this.partialPaymentCombinator,
-        this.confirmationOtpStatus,
-        this.currencySymbol,
-        this.appEnvironment,
-        this.instantBooking,
-        this.scheduleBooking,
-        this.scheduleBookingTimeRestriction,
-        this.advanceBooking,
-        this.languageList,
-        this.maintenanceMode,
-        this.customerLogin,
-        this.firebaseOtpVerification,
-        this.errorLogs,
-        this.repeatBooking,
-        this.createGuestUserAccount,
-        this.serviceAtProviderLocation,
-        this.newsletterTitle,
-        this.newsletterDescription
-      });
+      this.logo,
+      this.logoFullPath,
+      this.favicon,
+      this.faviconFullPath,
+      this.providerSelfRegistration,
+      this.countryCode,
+      this.businessAddress,
+      this.businessPhone,
+      this.businessEmail,
+      this.currencyDecimalPoint,
+      this.currencySymbolPosition,
+      this.privacyPolicy,
+      this.cancellationPolicy,
+      this.refundPolicy,
+      this.aboutUs,
+      this.defaultLocation,
+      this.appUrlAndroid,
+      this.appUrlIos,
+      this.smsVerification,
+      this.paginationLimit,
+      this.timeFormat,
+      this.paymentMethodList,
+      this.minimumVersion,
+      this.footerText,
+      this.phoneNumberVisibility,
+      this.walletStatus,
+      this.addFundToWallet,
+      this.loyaltyPointStatus,
+      this.referEarnStatus,
+      this.biddingStatus,
+      this.cookiesText,
+      this.phoneVerification,
+      this.emailVerification,
+      this.directProviderBooking,
+      this.cashAfterService,
+      this.digitalPayment,
+      this.forgetPasswordVerificationMethod,
+      this.socialMedia,
+      this.resentOtpTime,
+      this.minBookingAmount,
+      this.maxBookingAmount,
+      this.guestCheckout,
+      this.offlinePayment,
+      this.partialPayment,
+      this.additionalChargeLabelName,
+      this.additionalChargeFeeAmount,
+      this.additionalCharge,
+      this.partialPaymentCombinator,
+      this.confirmationOtpStatus,
+      this.currencySymbol,
+      this.appEnvironment,
+      this.instantBooking,
+      this.scheduleBooking,
+      this.scheduleBookingTimeRestriction,
+      this.advanceBooking,
+      this.languageList,
+      this.maintenanceMode,
+      this.customerLogin,
+      this.firebaseOtpVerification,
+      this.errorLogs,
+      this.repeatBooking,
+      this.createGuestUserAccount,
+      this.serviceAtProviderLocation,
+      this.newsletterTitle,
+      this.newsletterDescription,
+      this.crModuleEnabled});
 
   ConfigContent.fromJson(Map<String, dynamic> json) {
     businessName = json['business_name'];
@@ -173,7 +174,8 @@ class ConfigContent {
     favicon = json['favicon'];
     faviconFullPath = json['favicon_full_path'];
     countryCode = json['country_code'];
-    providerSelfRegistration = int.tryParse(json['provider_self_registration'].toString());
+    providerSelfRegistration =
+        int.tryParse(json['provider_self_registration'].toString());
     businessAddress = json['business_address'];
     businessPhone = json['business_phone'];
     businessEmail = json['business_email'];
@@ -184,8 +186,9 @@ class ConfigContent {
     cancellationPolicy = json['cancellation_policy'];
     refundPolicy = json['refund_policy'];
     aboutUs = json['about_us'];
-    defaultLocation = json['default_location'] != null ?
-    DefaultLocation.fromJson(json['default_location']) : null;
+    defaultLocation = json['default_location'] != null
+        ? DefaultLocation.fromJson(json['default_location'])
+        : null;
     appUrlAndroid = json['app_url_playstore'];
     appUrlIos = json['app_url_appstore'];
     smsVerification = json['sms_verification'];
@@ -198,8 +201,12 @@ class ConfigContent {
       });
     }
 
-    adminDetails = json['admin_details'] != null ? AdminDetails.fromJson(json['admin_details']) : null;
-    minimumVersion = json['min_versions'] != null ? MinimumVersion.fromJson(json['min_versions']) : null;
+    adminDetails = json['admin_details'] != null
+        ? AdminDetails.fromJson(json['admin_details'])
+        : null;
+    minimumVersion = json['min_versions'] != null
+        ? MinimumVersion.fromJson(json['min_versions'])
+        : null;
     footerText = json['footer_text'];
     phoneNumberVisibility = json['phone_number_visibility_for_chatting'];
     walletStatus = json['wallet_status'];
@@ -210,14 +217,17 @@ class ConfigContent {
     cookiesText = json['cookies_text'];
     phoneVerification = int.tryParse(json['phone_verification'].toString());
     emailVerification = int.tryParse(json['email_verification'].toString());
-    firebaseOtpVerification = int.tryParse(json['firebase_otp_verification'].toString());
+    firebaseOtpVerification =
+        int.tryParse(json['firebase_otp_verification'].toString());
     directProviderBooking = json['direct_provider_booking'];
     cashAfterService = json['cash_after_service'];
     digitalPayment = json['digital_payment'];
 
-    forgetPasswordVerificationMethod = json['forgot_password_verification_method'] != null
-        ? ForgetPasswordVerificationMethod.fromJson(json['forgot_password_verification_method'])
-        : null;
+    forgetPasswordVerificationMethod =
+        json['forgot_password_verification_method'] != null
+            ? ForgetPasswordVerificationMethod.fromJson(
+                json['forgot_password_verification_method'])
+            : null;
     if (json['social_media'] != null) {
       socialMedia = <SocialMedia>[];
       json['social_media'].forEach((v) {
@@ -231,18 +241,24 @@ class ConfigContent {
     offlinePayment = int.tryParse(json['offline_payment'].toString());
     partialPayment = int.tryParse(json['partial_payment'].toString());
     additionalChargeLabelName = json['additional_charge_label_name'];
-    additionalChargeFeeAmount = double.tryParse(json['additional_charge_fee_amount'].toString());
-    additionalCharge = int.tryParse(json['booking_additional_charge'].toString());
-    partialPaymentCombinator= json['partial_payment_combinator'];
+    additionalChargeFeeAmount =
+        double.tryParse(json['additional_charge_fee_amount'].toString());
+    additionalCharge =
+        int.tryParse(json['booking_additional_charge'].toString());
+    partialPaymentCombinator = json['partial_payment_combinator'];
     currencySymbol = json['currency_symbol'];
     appEnvironment = json['app_environment'];
     if (json['confirm_otp_for_complete_service'] != null) {
-      confirmationOtpStatus= json['confirm_otp_for_complete_service'] == 1 ? true : false;
+      confirmationOtpStatus =
+          json['confirm_otp_for_complete_service'] == 1 ? true : false;
     }
-    advanceBooking= json['advanced_booking'] != null ? AdvanceBooking.fromJson(json['advanced_booking']) : null;
+    advanceBooking = json['advanced_booking'] != null
+        ? AdvanceBooking.fromJson(json['advanced_booking'])
+        : null;
     instantBooking = int.tryParse(json['instant_booking'].toString());
     scheduleBooking = int.tryParse(json['schedule_booking'].toString());
-    scheduleBookingTimeRestriction = int.tryParse(json['schedule_booking_time_restriction'].toString());
+    scheduleBookingTimeRestriction =
+        int.tryParse(json['schedule_booking_time_restriction'].toString());
     if (json['system_language'] != null) {
       languageList = <Language>[];
       json['system_language'].forEach((v) {
@@ -264,10 +280,18 @@ class ConfigContent {
       });
     }
     repeatBooking = int.tryParse(json['repeat_booking'].toString());
-    createGuestUserAccount = int.tryParse(json['create_user_account_from_guest_info'].toString());
-    serviceAtProviderLocation = int.tryParse(json['service_at_provider_place'].toString());
-    newsletterTitle = json['newsletter_title'] != "" ? json['newsletter_title'] : null;
-    newsletterDescription = json['newsletter_description'] != "" ? json['newsletter_description'] : null;
+    createGuestUserAccount =
+        int.tryParse(json['create_user_account_from_guest_info'].toString());
+    serviceAtProviderLocation =
+        int.tryParse(json['service_at_provider_place'].toString());
+    newsletterTitle =
+        json['newsletter_title'] != "" ? json['newsletter_title'] : null;
+    newsletterDescription = json['newsletter_description'] != ""
+        ? json['newsletter_description']
+        : null;
+    crModuleEnabled = json.containsKey('cr_module_enabled')
+        ? int.tryParse(json['cr_module_enabled']?.toString() ?? '')
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -313,12 +337,14 @@ class ConfigContent {
     data['direct_provider_booking'] = directProviderBooking;
     data['cash_after_service'] = cashAfterService;
     data['digital_payment'] = digitalPayment;
-    data['forget_password_verification_method'] = forgetPasswordVerificationMethod;
+    data['forget_password_verification_method'] =
+        forgetPasswordVerificationMethod;
     data['otp_resend_time'] = resentOtpTime;
     data['min_booking_amount'] = minBookingAmount;
     data['max_booking_amount'] = maxBookingAmount;
     data['guest_checkout'] = guestCheckout;
     data['confirm_otp_for_complete_service'] = confirmationOtpStatus;
+    data['cr_module_enabled'] = crModuleEnabled;
 
     return data;
   }
@@ -349,7 +375,6 @@ class MinimumVersion {
 
   MinimumVersion({this.minVersionForAndroid, this.minVersionForIos});
 
-
   MinimumVersion.fromJson(Map<String, dynamic> json) {
     minVersionForAndroid = json['min_version_for_android'];
     minVersionForIos = json['min_version_for_ios'];
@@ -362,7 +387,6 @@ class MinimumVersion {
     return data;
   }
 }
-
 
 class Languages {
   String? code;
@@ -427,7 +451,6 @@ class Countries {
   }
 }
 
-
 class Zones {
   String? id;
   String? name;
@@ -439,12 +462,12 @@ class Zones {
 
   Zones(
       {this.id,
-        this.name,
-        this.coordinates,
-        this.isActive,
-        this.createdAt,
-        this.updatedAt,
-        this.pivot});
+      this.name,
+      this.coordinates,
+      this.isActive,
+      this.createdAt,
+      this.updatedAt,
+      this.pivot});
 
   Zones.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -516,7 +539,8 @@ class Pivot {
   }
 }
 
-String userLocationInfoToJson(UserLocationInfo data) => json.encode(data.toJson());
+String userLocationInfoToJson(UserLocationInfo data) =>
+    json.encode(data.toJson());
 
 class UserLocationInfo {
   String? ip;
@@ -537,20 +561,20 @@ class UserLocationInfo {
 
   UserLocationInfo(
       {this.ip,
-        this.countryName,
-        this.countryCode,
-        this.regionCode,
-        this.regionName,
-        this.cityName,
-        this.zipCode,
-        this.isoCode,
-        this.postalCode,
-        this.latitude,
-        this.longitude,
-        this.metroCode,
-        this.areaCode,
-        this.timezone,
-        this.driver});
+      this.countryName,
+      this.countryCode,
+      this.regionCode,
+      this.regionName,
+      this.cityName,
+      this.zipCode,
+      this.isoCode,
+      this.postalCode,
+      this.latitude,
+      this.longitude,
+      this.metroCode,
+      this.areaCode,
+      this.timezone,
+      this.driver});
 
   UserLocationInfo.fromJson(Map<String, dynamic> json) {
     ip = json['ip'];
@@ -613,7 +637,6 @@ class AdminDetails {
     }
   }
 
-
   AdminDetails.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     firstName = json['first_name'];
@@ -631,15 +654,14 @@ class AdminDetails {
   }
 }
 
-
 class DigitalPaymentMethod {
   String? gateway;
   String? gatewayImage;
   String? gatewayImageFullPath;
   String? label;
 
-
-  DigitalPaymentMethod({this.gateway, this.gatewayImage, this.label, this.gatewayImageFullPath});
+  DigitalPaymentMethod(
+      {this.gateway, this.gatewayImage, this.label, this.gatewayImageFullPath});
 
   DigitalPaymentMethod.fromJson(Map<String, dynamic> json) {
     gateway = json['gateway'];
@@ -664,11 +686,11 @@ class AdvanceBooking {
 
   AdvanceBooking(
       {this.advancedBookingRestrictionValue,
-        this.advancedBookingRestrictionType});
+      this.advancedBookingRestrictionType});
 
   AdvanceBooking.fromJson(Map<String, dynamic> json) {
     advancedBookingRestrictionValue =
-    json['advanced_booking_restriction_value'];
+        json['advanced_booking_restriction_value'];
     advancedBookingRestrictionType = json['advanced_booking_restriction_type'];
   }
 
@@ -676,8 +698,7 @@ class AdvanceBooking {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['advanced_booking_restriction_value'] =
         advancedBookingRestrictionValue;
-    data['advanced_booking_restriction_type'] =
-        advancedBookingRestrictionType;
+    data['advanced_booking_restriction_type'] = advancedBookingRestrictionType;
     return data;
   }
 }
@@ -709,14 +730,15 @@ class MaintenanceMode {
 
   MaintenanceMode(
       {this.maintenanceStatus,
-        this.selectedMaintenanceSystem,
-        this.maintenanceMessages, this.maintenanceTypeAndDuration});
+      this.selectedMaintenanceSystem,
+      this.maintenanceMessages,
+      this.maintenanceTypeAndDuration});
 
   MaintenanceMode.fromJson(Map<String, dynamic> json) {
     maintenanceStatus = json['maintenance_status'];
     selectedMaintenanceSystem = json['selected_maintenance_system'] != null
         ? SelectedMaintenanceSystem.fromJson(
-        json['selected_maintenance_system'])
+            json['selected_maintenance_system'])
         : null;
     maintenanceMessages = json['maintenance_messages'] != null
         ? MaintenanceMessages.fromJson(json['maintenance_messages'])
@@ -724,7 +746,7 @@ class MaintenanceMode {
 
     maintenanceTypeAndDuration = json['maintenance_type_and_duration'] != null
         ? MaintenanceTypeAndDuration.fromJson(
-        json['maintenance_type_and_duration'])
+            json['maintenance_type_and_duration'])
         : null;
   }
 
@@ -732,8 +754,7 @@ class MaintenanceMode {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['maintenance_status'] = maintenanceStatus;
     if (selectedMaintenanceSystem != null) {
-      data['selected_maintenance_system'] =
-          selectedMaintenanceSystem!.toJson();
+      data['selected_maintenance_system'] = selectedMaintenanceSystem!.toJson();
     }
     if (maintenanceMessages != null) {
       data['maintenance_messages'] = maintenanceMessages!.toJson();
@@ -780,9 +801,9 @@ class MaintenanceMessages {
 
   MaintenanceMessages(
       {this.businessNumber,
-        this.businessEmail,
-        this.maintenanceMessage,
-        this.messageBody});
+      this.businessEmail,
+      this.maintenanceMessage,
+      this.messageBody});
 
   MaintenanceMessages.fromJson(Map<String, dynamic> json) {
     businessNumber = json['business_number'];
@@ -835,8 +856,7 @@ class CustomerLogin {
         ? LoginOption.fromJson(json['login_option'])
         : null;
     socialMediaLoginOptions = json['social_media_login_options'] != null
-        ? SocialMediaLoginOptions.fromJson(
-        json['social_media_login_options'])
+        ? SocialMediaLoginOptions.fromJson(json['social_media_login_options'])
         : null;
   }
 
@@ -846,8 +866,7 @@ class CustomerLogin {
       data['login_option'] = loginOption!.toJson();
     }
     if (socialMediaLoginOptions != null) {
-      data['social_media_login_options'] =
-          socialMediaLoginOptions!.toJson();
+      data['social_media_login_options'] = socialMediaLoginOptions!.toJson();
     }
     return data;
   }
@@ -934,5 +953,3 @@ class ErrorLog {
     return data;
   }
 }
-
-

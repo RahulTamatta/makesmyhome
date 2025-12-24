@@ -13,4 +13,9 @@ class ScheduleRepo extends GetxService {
       "booking_schedule":scheduleTime
     });
   }
+
+  Future<Response> getAvailability({required String serviceId, required String providerId, required String date, int duration = 60, int step = 30}) async {
+    final uri = "${AppConstants.availabilityUri}?service_id=$serviceId&provider_id=$providerId&date=$date&duration=$duration&step=$step";
+    return await apiClient.getData(uri);
+  }
 }

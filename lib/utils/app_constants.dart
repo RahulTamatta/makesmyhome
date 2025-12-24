@@ -49,15 +49,24 @@ class AppConstants {
 
   static const String recommendedServiceUri =
       '/api/v1/customer/service/recommended';
+  static const String autocareServiceUri = '/api/v1/customer/service/autocare';
   static const String recommendedSearchUri =
       '/api/v1/customer/service/search/recommended';
   static const String offerListUri = '/api/v1/customer/service/offers';
+  // Construction & Renovation (CR) endpoints
+  static const String crAllServiceUri = '/api/v1/customer/cr/service';
+  static const String crServiceSearchUri = '/api/v1/customer/cr/service/search';
+  static const String crServicesBySubcategoryUri =
+      '/api/v1/customer/cr/service/sub-category/';
+  static const String crServiceDetailsUri =
+      '/api/v1/customer/cr/service/detail';
   static const String serviceBasedOnSubcategory =
       '/api/v1/customer/service/sub-category/';
   static const String itemsBasedOnCampaignId =
       '/api/v1/customer/campaign/data/items?campaign_id=';
   static const String serviceDetailsUri = '/api/v1/customer/service/detail';
   static const String getServiceReviewList = '/api/v1/customer/service/review/';
+  static const String availabilityUri = '/api/v1/customer/service/availability';
   static const String subcategoryUri =
       '/api/v1/customer/category/childes?limit=20&offset=1&id=';
   static const String categoryServiceUri = '/api/v1/categories/service/';
@@ -237,12 +246,12 @@ class AppConstants {
   static const String walletAccessToken = 'wallet_access_token';
   static const String isContinueZone = 'isContinue';
   static const String referredBottomSheet = 'referred_bottom_sheet';
+  static const String crModeKey = 'app_mode_cr_enabled';
   static const String lastIncompleteOfflineBookingId =
       'last_incomplete_offline_booking_id';
 
   static Map<String, String> configHeader = {
     'Content-Type': 'application/json; charset=UTF-8',
-    AppConstants.zoneId: 'configuration',
   };
 
   static List<LanguageModel> languages = [

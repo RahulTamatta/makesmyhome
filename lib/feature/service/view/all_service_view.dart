@@ -196,7 +196,7 @@ class _AllServiceViewState extends State<AllServiceView> {
       return GetBuilder<ServiceController>(
         initState: (state){
           Get.find<ServiceController>().getEmptyCampaignService();
-          Get.find<ServiceController>().getCampaignBasedServiceList(widget.campaignID ?? "",true);
+          Get.find<ServiceController>().getCampaignBasedServiceList(widget.campaignID ?? "", reload: true);
         },
         builder: (serviceController){
           return _buildWidget(serviceController.campaignBasedServiceList,context);

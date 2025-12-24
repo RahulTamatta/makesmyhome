@@ -2,20 +2,23 @@ import 'dart:async';
 import 'package:makesmyhome/feature/subscription/controller/subscription_controller.dart';
 import 'package:makesmyhome/feature/subscription/view/view.dart';
 import 'package:makesmyhome/helper/service_loading_manager.dart';
+import 'package:makesmyhome/feature/cr_mode/controller/cr_mode_controller.dart';
 import 'package:makesmyhome/utils/core_export.dart';
 import 'package:get/get.dart';
 
 class HomeScreen extends StatefulWidget {
   /// Optimized service loading using ServiceLoadingManager
   /// Eliminates race conditions and provides better error handling
-  static Future<void> loadData(bool reload, {int availableServiceCount = 1}) async {
-    debugPrint('HomeScreen.loadData: Delegating to ServiceLoadingManager (reload: $reload, count: $availableServiceCount)');
-    
+  static Future<void> loadData(bool reload,
+      {int availableServiceCount = 1}) async {
+    debugPrint(
+        'HomeScreen.loadData: Delegating to ServiceLoadingManager (reload: $reload, count: $availableServiceCount)');
+
     await ServiceLoadingManager.instance.loadAllServices(
       reload: reload,
       availableServiceCount: availableServiceCount,
     );
-    
+
     // Log loading status for debugging
     final status = ServiceLoadingManager.instance.getLoadingStatus();
     debugPrint('HomeScreen.loadData: Loading completed. Status: $status');
@@ -28,7 +31,7 @@ class HomeScreen extends StatefulWidget {
     this.addressModel,
     required this.showServiceNotAvailableDialog,
   });
-  
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -48,22 +51,22 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Initialize home screen with proper sequencing
   Future<void> _initializeHomeScreen() async {
     debugPrint('HomeScreen: Initializing...');
-    
+
     Get.find<LocalizationController>().filterLanguage(shouldUpdate: false);
-    
+
     // Get address list if user is logged in
     if (Get.find<AuthController>().isLoggedIn()) {
       Get.find<UserController>().getUserInfo();
       Get.find<LocationController>().getAddressList();
     }
-    
+
     // Get available service count from current address
     if (Get.find<LocationController>().getUserAddress() != null) {
       availableServiceCount = Get.find<LocationController>()
           .getUserAddress()!
           .availableServiceCountInZone!;
     }
-    
+
     _previousAddress = widget.addressModel;
 
     // Show service not available dialog if needed
@@ -82,19 +85,25 @@ class _HomeScreenState extends State<HomeScreen> {
     // Check if zone is properly set every 500ms
     Timer.periodic(const Duration(milliseconds: 500), (timer) {
       final sharedPreferences = Get.find<SharedPreferences>();
-      final currentZoneId = sharedPreferences.getString(AppConstants.zoneId) ?? '';
-      
+      final currentZoneId =
+          sharedPreferences.getString(AppConstants.zoneId) ?? '';
+
       debugPrint('HomeScreen: Checking zone status - zoneId: $currentZoneId');
-      
+
       // If zone is set and not the default 'configuration', load services
       if (currentZoneId.isNotEmpty && currentZoneId != 'configuration') {
         timer.cancel();
-        debugPrint('HomeScreen: Zone resolved ($currentZoneId), starting service loading with availableServiceCount: $availableServiceCount');
-        HomeScreen.loadData(false, availableServiceCount: availableServiceCount);
-      } else if (timer.tick > 20) { // Stop after 10 seconds
+        debugPrint(
+            'HomeScreen: Zone resolved ($currentZoneId), starting service loading with availableServiceCount: $availableServiceCount');
+        HomeScreen.loadData(false,
+            availableServiceCount: availableServiceCount);
+      } else if (timer.tick > 20) {
+        // Stop after 10 seconds
         timer.cancel();
-        debugPrint('HomeScreen: Timeout waiting for zone, loading services anyway');
-        HomeScreen.loadData(false, availableServiceCount: availableServiceCount);
+        debugPrint(
+            'HomeScreen: Timeout waiting for zone, loading services anyway');
+        HomeScreen.loadData(false,
+            availableServiceCount: availableServiceCount);
       }
     });
   }
@@ -128,7 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: homeAppBar(signInShakeKey: signInShakeKey),
-      endDrawer: ResponsiveHelper.isDesktop(context) ? const MenuDrawer() : null,
+      endDrawer:
+          ResponsiveHelper.isDesktop(context) ? const MenuDrawer() : null,
       body: ResponsiveHelper.isDesktop(context)
           ? WebHomeScreen(
               scrollController: scrollController,
@@ -153,80 +163,107 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         children: [
                           // Banner Section
-                          const BannerView(),
-                          
+                          GetBuilder<CrModeController>(builder: (cr) {
+                            return cr.isCrMode
+                                ? const SizedBox()
+                                : const BannerView();
+                          }),
+
                           const SizedBox(height: Dimensions.paddingSizeSmall),
-                          
+                          const SizedBox(height: Dimensions.paddingSizeSmall),
+
                           // Categories Section
-                          const CategoryView(),
-                          
+                          GetBuilder<CrModeController>(builder: (cr) {
+                            return cr.isCrMode
+                                ? const SizedBox()
+                                : const CategoryView();
+                          }),
+
                           const SizedBox(height: Dimensions.paddingSizeSmall),
-                          
+
                           // Popular Services Section
                           GetBuilder<ServiceController>(
                             builder: (serviceController) {
-                              debugPrint('HomeScreen: Popular services - ${serviceController.popularServiceList?.length ?? 0} items');
-                              return serviceController.popularServiceList != null &&
-                                      serviceController.popularServiceList!.isNotEmpty
+                              debugPrint(
+                                  'HomeScreen: Popular services - ${serviceController.popularServiceList?.length ?? 0} items');
+                              return serviceController.popularServiceList !=
+                                          null &&
+                                      serviceController
+                                          .popularServiceList!.isNotEmpty
                                   ? HorizontalScrollServiceView(
                                       fromPage: "popular",
-                                      serviceList: serviceController.popularServiceList!,
+                                      serviceList:
+                                          serviceController.popularServiceList!,
                                     )
                                   : const SizedBox();
                             },
                           ),
-                          
+
                           const SizedBox(height: Dimensions.paddingSizeSmall),
-                          
+
                           // Trending Services Section
                           GetBuilder<ServiceController>(
                             builder: (serviceController) {
-                              debugPrint('HomeScreen: Trending services - ${serviceController.trendingServiceList?.length ?? 0} items');
-                              return serviceController.trendingServiceList != null &&
-                                      serviceController.trendingServiceList!.isNotEmpty
+                              debugPrint(
+                                  'HomeScreen: Trending services - ${serviceController.trendingServiceList?.length ?? 0} items');
+                              return serviceController.trendingServiceList !=
+                                          null &&
+                                      serviceController
+                                          .trendingServiceList!.isNotEmpty
                                   ? HorizontalScrollServiceView(
                                       fromPage: "trending",
-                                      serviceList: serviceController.trendingServiceList!,
+                                      serviceList: serviceController
+                                          .trendingServiceList!,
                                     )
                                   : const SizedBox();
                             },
                           ),
-                          
+
                           const SizedBox(height: Dimensions.paddingSizeSmall),
-                          
+
                           // Recommended Services Section
                           GetBuilder<ServiceController>(
                             builder: (serviceController) {
-                              return serviceController.recommendedServiceList != null &&
-                                      serviceController.recommendedServiceList!.isNotEmpty
+                              return serviceController.recommendedServiceList !=
+                                          null &&
+                                      serviceController
+                                          .recommendedServiceList!.isNotEmpty
                                   ? RecommendedServiceView(
                                       height: 200,
                                     )
                                   : const SizedBox();
                             },
                           ),
-                          
+
                           const SizedBox(height: Dimensions.paddingSizeSmall),
-                          
+
                           // Subscription Section
                           GetBuilder<SubscriptionController>(
                             builder: (subscriptionController) {
-                              debugPrint('HomeScreen: Subscription section - subscriptions count: ${subscriptionController.subscriptions.length}, isNotEmpty: ${subscriptionController.subscriptions.isNotEmpty}');
-                              debugPrint('HomeScreen: isLoading: ${subscriptionController.isLoading.value}, userSubscriptionStatus: ${subscriptionController.userSubscriptionStatus.length}');
-                              
-                              if (subscriptionController.subscriptions.isNotEmpty) {
-                                debugPrint('HomeScreen: Showing subscription section with ${subscriptionController.subscriptions.length} items');
+                              debugPrint(
+                                  'HomeScreen: Subscription section - subscriptions count: ${subscriptionController.subscriptions.length}, isNotEmpty: ${subscriptionController.subscriptions.isNotEmpty}');
+                              debugPrint(
+                                  'HomeScreen: isLoading: ${subscriptionController.isLoading.value}, userSubscriptionStatus: ${subscriptionController.userSubscriptionStatus.length}');
+
+                              if (subscriptionController
+                                  .subscriptions.isNotEmpty) {
+                                debugPrint(
+                                    'HomeScreen: Showing subscription section with ${subscriptionController.subscriptions.length} items');
                                 return Container(
-                                  constraints: BoxConstraints(minHeight: 200), // Ensure minimum height
+                                  constraints: BoxConstraints(
+                                      minHeight: 200), // Ensure minimum height
                                   child: SubscriptionView(),
                                 );
-                              } else if (subscriptionController.isLoading.value) {
-                                debugPrint('HomeScreen: Subscriptions are loading - showing loading state');
+                              } else if (subscriptionController
+                                  .isLoading.value) {
+                                debugPrint(
+                                    'HomeScreen: Subscriptions are loading - showing loading state');
                                 return Container(
                                   height: 200,
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         CircularProgressIndicator(),
                                         SizedBox(height: 16),
@@ -236,12 +273,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               } else {
-                                debugPrint('HomeScreen: No subscriptions available - hiding section');
+                                debugPrint(
+                                    'HomeScreen: No subscriptions available - hiding section');
                                 return const SizedBox();
                               }
                             },
                           ),
-                          
+
                           const SizedBox(height: 100),
                         ],
                       ),

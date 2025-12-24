@@ -1,10 +1,10 @@
-import 'package:makesmyhome/firebase_options.dart';
 import 'package:get/get.dart';
+import 'package:makesmyhome/firebase_options.dart';
 
+import 'feature/autocare/controller/autocare_controller.dart';
 import 'feature/community/controller/community_controller.dart';
 import 'feature/subscription/controller/subscription_controller.dart';
 import 'feature/subscription/service.dart';
-import 'feature/autocare/controller/autocare_controller.dart';
 import 'helper/get_di.dart' as di;
 import 'utils/core_export.dart';
 
@@ -20,8 +20,7 @@ Future<void> main() async {
   Get.lazyPut(() => CommunityController());
   Get.lazyPut(() => AutocareController());
   setPathUrlStrategy();
-  
-  // CRITICAL FIX: Check if Firebase is already initialized before initializing
+
   try {
     if (GetPlatform.isWeb) {
       await Firebase.initializeApp(
@@ -44,9 +43,9 @@ Future<void> main() async {
       );
     }
   } catch (e) {
-    // Firebase already initialized - this is fine, continue
     if (kDebugMode) {
-      print('[FIREBASE_INIT] Firebase already initialized or initialization error: $e');
+      print(
+          '[FIREBASE_INIT] Firebase already initialized or initialization error: $e');
     }
   }
 
@@ -153,16 +152,14 @@ class _MyAppState extends State<MyApp> {
       }
       _route();
 
-      // CRITICAL FIX: Handle web deep links for payment callbacks
       if (kIsWeb) {
-        final uri = Uri.base; // current browser URL
+        final uri = Uri.base;
         debugPrint('[WEB_DEEPLINK] Current URL: ${uri.toString()}');
         debugPrint('[WEB_DEEPLINK] URL Path: ${uri.path}');
         debugPrint('[WEB_DEEPLINK] URL Query: ${uri.query}');
         debugPrint(
             '[WEB_DEEPLINK] Expected payment success path: ${RouteHelper.paymentSuccess}');
 
-        // Check if we are on the payment success route
         if (uri.path == RouteHelper.paymentSuccess ||
             uri.path == '/payment/success') {
           final fullRoute =
@@ -172,7 +169,6 @@ class _MyAppState extends State<MyApp> {
               '[WEB_DEEPLINK] ✅ Detected payment success callback: $fullRoute');
           debugPrint('[WEB_DEEPLINK] Query parameters: ${uri.queryParameters}');
 
-          // Navigate after first frame so GetX is fully initialized
           WidgetsBinding.instance.addPostFrameCallback((_) {
             try {
               debugPrint(
@@ -182,7 +178,7 @@ class _MyAppState extends State<MyApp> {
             } catch (e) {
               debugPrint(
                   '[WEB_DEEPLINK][ERR] Failed to navigate to deep link: $e');
-              // Fallback: try to extract parameters and navigate manually
+
               try {
                 debugPrint(
                     '[WEB_DEEPLINK] Trying fallback navigation with parameters');
@@ -192,7 +188,7 @@ class _MyAppState extends State<MyApp> {
               } catch (fallbackError) {
                 debugPrint(
                     '[WEB_DEEPLINK][ERR] Fallback navigation failed: $fallbackError');
-                // Last resort: try direct route call
+
                 try {
                   debugPrint('[WEB_DEEPLINK] Trying direct route navigation');
                   Get.offAllNamed('/payment/success',
@@ -219,7 +215,6 @@ class _MyAppState extends State<MyApp> {
         return GetBuilder<SplashController>(builder: (splashController) {
           if ((GetPlatform.isWeb &&
               splashController.configModel.content == null)) {
-            // Show a friendly loader on web instead of a blank screen while config loads
             return MaterialApp(
               title: 'Loading...',
               debugShowCheckedModeBanner: false,

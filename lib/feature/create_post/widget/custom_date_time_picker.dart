@@ -24,6 +24,8 @@ class CustomDateTimePicker extends StatelessWidget {
   pointerInterceptor(){
 
     Get.find<ScheduleController>().setInitialScheduleValue();
+    Get.find<ScheduleController>().fetchAvailabilityAuto();
+
     ConfigModel configModel = Get.find<SplashController>().configModel;
     var dateRangePickerController = DateRangePickerController();
 

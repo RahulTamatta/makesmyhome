@@ -95,6 +95,16 @@ class AddressAppBar extends StatelessWidget implements PreferredSizeWidget {
           onTap: () => Get.toNamed(RouteHelper.getNotificationRoute()),
           child: const Icon(Icons.notifications, size: 25, color: Colors.white),
         ),
+        const SizedBox(
+          width: Dimensions.paddingSizeSmall,
+        ),
+        InkWell(
+          onTap: () => Get.toNamed(RouteHelper.getCartRoute()),
+          child: CartWidget(
+            color: Colors.white,
+            size: Dimensions.cartWidgetSize,
+          ),
+        ),
       ]),
     );
   }

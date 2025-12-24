@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:makesmyhome/utils/core_export.dart';
+import 'package:makesmyhome/feature/cr_mode/controller/cr_mode_controller.dart';
 
 class ServiceWidgetVertical extends StatelessWidget {
   final Service service;
@@ -21,33 +22,43 @@ class ServiceWidgetVertical extends StatelessWidget {
     num lowestPrice = 0.0;
 
     if (fromType == 'fromCampaign') {
-      if (service.variations != null) {
-        lowestPrice = service.variations![0].price!;
-        for (var i = 0; i < service.variations!.length; i++) {
-          if (service.variations![i].price! < lowestPrice) {
-            lowestPrice = service.variations![i].price!;
-          }
+      if (service.variations != null && service.variations!.isNotEmpty) {
+        lowestPrice = service.variations!.first.price ?? 0;
+        for (final v in service.variations!) {
+          final p = v.price ?? 0;
+          if (p < lowestPrice) lowestPrice = p;
         }
+      } else if (service.variationsAppFormat?.defaultPrice != null) {
+        lowestPrice = service.variationsAppFormat!.defaultPrice!;
       }
     } else {
-      if (service.variationsAppFormat != null) {
-        if (service.variationsAppFormat!.zoneWiseVariations != null) {
-          lowestPrice =
-              service.variationsAppFormat!.zoneWiseVariations![0].price!;
-          for (var i = 0;
-              i < service.variationsAppFormat!.zoneWiseVariations!.length;
-              i++) {
-            if (service.variationsAppFormat!.zoneWiseVariations![i].price! <
-                lowestPrice) {
-              lowestPrice =
-                  service.variationsAppFormat!.zoneWiseVariations![i].price!;
-            }
-          }
+      final zoneVars = service.variationsAppFormat?.zoneWiseVariations;
+      if (zoneVars != null && zoneVars.isNotEmpty) {
+        lowestPrice = zoneVars.first.price ?? 0;
+        for (final zv in zoneVars) {
+          final p = zv.price ?? 0;
+          if (p < lowestPrice) lowestPrice = p;
         }
+      } else if (service.variations != null && service.variations!.isNotEmpty) {
+        lowestPrice = service.variations!.first.price ?? 0;
+        for (final v in service.variations!) {
+          final p = v.price ?? 0;
+          if (p < lowestPrice) lowestPrice = p;
+        }
+      } else if (service.crBasePrice != null && service.crBasePrice! > 0) {
+        lowestPrice = service.crBasePrice!;
+      } else if (service.variationsAppFormat?.defaultPrice != null) {
+        lowestPrice = service.variationsAppFormat!.defaultPrice!;
       }
     }
 
     Discount discountModel = PriceConverter.discountCalculation(service);
+    final bool useCrName = Get.isRegistered<CrModeController>() &&
+        Get.find<CrModeController>().isCrMode;
+    final String displayName = useCrName
+        ? (service.category?.name ?? service.name ?? "")
+        : (service.name ?? "");
+    final bool hasPrice = (lowestPrice.toDouble()) > 0;
     return OnHover(
       isItem: true,
       child: GetBuilder<ServiceController>(builder: (serviceController) {
@@ -81,7 +92,9 @@ class ServiceWidgetVertical extends StatelessWidget {
                                 borderRadius: const BorderRadius.all(
                                     Radius.circular(Dimensions.radiusSmall)),
                                 child: CustomImage(
-                                  image: '${service.thumbnailFullPath}',
+                                  image: service.thumbnailFullPath ??
+                                      service.coverImageFullPath ??
+                                      '',
                                   fit: BoxFit.cover,
                                   width: double.maxFinite,
                                   height: double.infinity,
@@ -105,7 +118,7 @@ class ServiceWidgetVertical extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               vertical: Dimensions.paddingSizeEight - 2),
                           child: Text(
-                            service.name ?? "",
+                            displayName,
                             style: robotoMedium.copyWith(
                                 fontSize: Dimensions.fontSizeLarge),
                             maxLines: 1,
@@ -119,74 +132,91 @@ class ServiceWidgetVertical extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Text(
-                                  'starts_from'.tr,
-                                  style: robotoRegular.copyWith(
-                                      fontSize: Dimensions.fontSizeSmall,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge!
-                                          .color!
-                                          .withValues(alpha: .5)),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (discountModel.discountAmount! > 0)
-                                      Directionality(
-                                        textDirection: TextDirection.ltr,
-                                        child: Text(
-                                          PriceConverter.convertPrice(
-                                              lowestPrice.toDouble()),
-                                          maxLines: 2,
-                                          style: robotoRegular.copyWith(
-                                              fontSize:
-                                                  Dimensions.fontSizeSmall,
-                                              decoration:
-                                                  TextDecoration.lineThrough,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .error),
-                                        ),
+                                hasPrice
+                                    ? Text(
+                                        'starts_from'.tr,
+                                        style: robotoRegular.copyWith(
+                                            fontSize: Dimensions.fontSizeSmall,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge!
+                                                .color!
+                                                .withValues(alpha: .5)),
+                                      )
+                                    : const SizedBox(),
+                                hasPrice
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          if (discountModel.discountAmount! > 0)
+                                            Directionality(
+                                              textDirection: TextDirection.ltr,
+                                              child: Text(
+                                                PriceConverter.convertPrice(
+                                                    lowestPrice.toDouble()),
+                                                maxLines: 2,
+                                                style: robotoRegular.copyWith(
+                                                    fontSize: Dimensions
+                                                        .fontSizeSmall,
+                                                    decoration: TextDecoration
+                                                        .lineThrough,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .error),
+                                              ),
+                                            ),
+                                          discountModel.discountAmount! > 0
+                                              ? Directionality(
+                                                  textDirection:
+                                                      TextDirection.ltr,
+                                                  child: Text(
+                                                    PriceConverter.convertPrice(
+                                                        lowestPrice.toDouble(),
+                                                        discount: discountModel
+                                                            .discountAmount!
+                                                            .toDouble(),
+                                                        discountType: discountModel
+                                                            .discountAmountType),
+                                                    style: robotoMedium.copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeDefault,
+                                                        color: Get.isDarkMode
+                                                            ? Theme.of(context)
+                                                                .primaryColorLight
+                                                            : Theme.of(context)
+                                                                .primaryColor),
+                                                  ),
+                                                )
+                                              : Directionality(
+                                                  textDirection:
+                                                      TextDirection.ltr,
+                                                  child: Text(
+                                                    PriceConverter.convertPrice(
+                                                        lowestPrice.toDouble()),
+                                                    style: robotoMedium.copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeDefault,
+                                                        color: Get.isDarkMode
+                                                            ? Theme.of(context)
+                                                                .primaryColorLight
+                                                            : Theme.of(context)
+                                                                .primaryColor),
+                                                  ),
+                                                ),
+                                        ],
+                                      )
+                                    : Text(
+                                        'get_quote'.tr,
+                                        style: robotoMedium.copyWith(
+                                            fontSize:
+                                                Dimensions.fontSizeDefault,
+                                            color: Get.isDarkMode
+                                                ? Theme.of(context)
+                                                    .primaryColorLight
+                                                : Theme.of(context)
+                                                    .primaryColor),
                                       ),
-                                    discountModel.discountAmount! > 0
-                                        ? Directionality(
-                                            textDirection: TextDirection.ltr,
-                                            child: Text(
-                                              PriceConverter.convertPrice(
-                                                  lowestPrice.toDouble(),
-                                                  discount: discountModel
-                                                      .discountAmount!
-                                                      .toDouble(),
-                                                  discountType: discountModel
-                                                      .discountAmountType),
-                                              style: robotoMedium.copyWith(
-                                                  fontSize: Dimensions
-                                                      .fontSizeDefault,
-                                                  color: Get.isDarkMode
-                                                      ? Theme.of(context)
-                                                          .primaryColorLight
-                                                      : Theme.of(context)
-                                                          .primaryColor),
-                                            ),
-                                          )
-                                        : Directionality(
-                                            textDirection: TextDirection.ltr,
-                                            child: Text(
-                                              PriceConverter.convertPrice(
-                                                  lowestPrice.toDouble()),
-                                              style: robotoMedium.copyWith(
-                                                  fontSize: Dimensions
-                                                      .fontSizeDefault,
-                                                  color: Get.isDarkMode
-                                                      ? Theme.of(context)
-                                                          .primaryColorLight
-                                                      : Theme.of(context)
-                                                          .primaryColor),
-                                            ),
-                                          ),
-                                  ],
-                                ),
                               ]),
                         ),
                       ],

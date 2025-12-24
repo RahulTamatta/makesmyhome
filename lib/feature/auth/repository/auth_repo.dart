@@ -124,66 +124,77 @@ class AuthRepo {
 
   Future<Response> sendOtpForForgetPassword(
       String identity, String identityType) async {
-    debugPrint('[FORGOT_PASSWORD_REPO] Sending OTP request to: ${AppConstants.sendOtpForForgetPassword}');
-    debugPrint('[FORGOT_PASSWORD_REPO] Payload: {"identity": "$identity", "identity_type": "$identityType"}');
-    
+    debugPrint(
+        '[FORGOT_PASSWORD_REPO] Sending OTP request to: ${AppConstants.sendOtpForForgetPassword}');
+    debugPrint(
+        '[FORGOT_PASSWORD_REPO] Payload: {"identity": "$identity", "identity_type": "$identityType"}');
+
     // ENHANCED: Try POST first, but handle timeout/CORS immediately
     try {
       final response = await apiClient.postData(
         AppConstants.sendOtpForForgetPassword,
         {"identity": identity, "identity_type": identityType},
       ).timeout(
-        const Duration(seconds: 10), // Shorter timeout to trigger fallback faster
+        const Duration(
+            seconds: 10), // Shorter timeout to trigger fallback faster
         onTimeout: () {
-          debugPrint('[FORGOT_PASSWORD_REPO] POST request timed out after 10 seconds, triggering CORS fallback');
-          throw TimeoutException('POST request timed out', const Duration(seconds: 10));
+          debugPrint(
+              '[FORGOT_PASSWORD_REPO] POST request timed out after 10 seconds, triggering CORS fallback');
+          throw TimeoutException(
+              'POST request timed out', const Duration(seconds: 10));
         },
       );
-      
-      debugPrint('[FORGOT_PASSWORD_REPO] POST request successful: ${response.statusCode}');
+
+      debugPrint(
+          '[FORGOT_PASSWORD_REPO] POST request successful: ${response.statusCode}');
       return response;
-      
     } catch (e) {
       debugPrint('[FORGOT_PASSWORD_REPO][ERROR] POST request failed: $e');
-      
+
       // CRITICAL FIX: Handle CORS, timeout, and network errors with GET fallback
-      if (e.toString().contains('CORS') || 
+      if (e.toString().contains('CORS') ||
           e.toString().contains('Failed to fetch') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('ClientException') ||
           e.toString().contains('connection_to_api_server_failed') ||
           e.runtimeType.toString().contains('TimeoutException')) {
-        debugPrint('[FORGOT_PASSWORD_REPO] CORS/Network/Timeout error detected, trying GET fallback');
-        
+        debugPrint(
+            '[FORGOT_PASSWORD_REPO] CORS/Network/Timeout error detected, trying GET fallback');
+
         try {
           // FALLBACK: Try GET request with query parameters
-          final getUrl = '${AppConstants.sendOtpForForgetPassword}?identity=$identity&identity_type=$identityType';
+          final getUrl =
+              '${AppConstants.sendOtpForForgetPassword}?identity=$identity&identity_type=$identityType';
           debugPrint('[FORGOT_PASSWORD_REPO] Trying GET fallback: $getUrl');
-          
+
           final getResponse = await apiClient.getData(getUrl).timeout(
             const Duration(seconds: 8), // Even shorter timeout for GET
             onTimeout: () {
               debugPrint('[FORGOT_PASSWORD_REPO] GET fallback also timed out');
-              throw TimeoutException('GET fallback timed out', const Duration(seconds: 8));
+              throw TimeoutException(
+                  'GET fallback timed out', const Duration(seconds: 8));
             },
           );
-          
-          debugPrint('[FORGOT_PASSWORD_REPO] GET fallback response: ${getResponse.statusCode}');
-          
+
+          debugPrint(
+              '[FORGOT_PASSWORD_REPO] GET fallback response: ${getResponse.statusCode}');
+
           // Check if GET also failed due to CORS (status code 1)
           if (getResponse.statusCode == 1 && kIsWeb) {
-            debugPrint('[FORGOT_PASSWORD_REPO] GET also failed with CORS, triggering web mock response');
+            debugPrint(
+                '[FORGOT_PASSWORD_REPO] GET also failed with CORS, triggering web mock response');
             throw Exception('GET also failed due to CORS');
           }
-          
+
           return getResponse;
-          
         } catch (getError) {
-          debugPrint('[FORGOT_PASSWORD_REPO] GET fallback also failed: $getError');
-          
+          debugPrint(
+              '[FORGOT_PASSWORD_REPO] GET fallback also failed: $getError');
+
           // FINAL FALLBACK: Return mock success response for web platform
           if (kIsWeb) {
-            debugPrint('[FORGOT_PASSWORD_REPO] Web platform detected - returning mock success for CORS bypass');
+            debugPrint(
+                '[FORGOT_PASSWORD_REPO] Web platform detected - returning mock success for CORS bypass');
             return Response(
               statusCode: 200,
               statusText: 'OK',
@@ -191,20 +202,24 @@ class AuthRepo {
                 'response_code': 'default_200',
                 'message': 'OTP request processed (CORS bypass mode)',
                 'mock_response': true,
-                'note': 'Due to browser security restrictions, please check your email manually'
+                'note':
+                    'Due to browser security restrictions, please check your email manually'
               },
             );
           }
-          
+
           // Return error for non-web platforms
           return Response(
             statusCode: 1,
             statusText: 'NETWORK_ERROR',
-            body: {'error': 'Network connection failed. Please check your internet and try again.'},
+            body: {
+              'error':
+                  'Network connection failed. Please check your internet and try again.'
+            },
           );
         }
       }
-      
+
       // Re-throw other non-network errors
       debugPrint('[FORGOT_PASSWORD_REPO] Non-network error, re-throwing: $e');
       rethrow;
@@ -295,6 +310,7 @@ class AuthRepo {
 
   Future<bool?> saveUserToken(String token) async {
     apiClient.token = token;
+    final hasToken = (token).isNotEmpty;
     apiClient.updateHeader(
         token,
         sharedPreferences.getString(AppConstants.userAddress) != null
@@ -303,7 +319,7 @@ class AuthRepo {
                 .zoneId
             : null,
         sharedPreferences.getString(AppConstants.languageCode),
-        sharedPreferences.getString(AppConstants.guestId));
+        hasToken ? null : sharedPreferences.getString(AppConstants.guestId));
     return await sharedPreferences.setString(AppConstants.token, token);
   }
 

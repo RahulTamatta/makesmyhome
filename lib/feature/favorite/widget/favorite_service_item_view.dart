@@ -18,19 +18,24 @@ class FavoriteServiceItemView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double lowestPrice = 0.0;
-    if (service?.variationsAppFormat!.zoneWiseVariations != null) {
-      lowestPrice = service!.variationsAppFormat!.zoneWiseVariations![0].price!
-          .toDouble();
-      for (var i = 0;
-          i < service!.variationsAppFormat!.zoneWiseVariations!.length;
-          i++) {
-        if (service!.variationsAppFormat!.zoneWiseVariations![i].price! <
-            lowestPrice) {
-          lowestPrice = service!
-              .variationsAppFormat!.zoneWiseVariations![i].price!
-              .toDouble();
-        }
+    final zoneVars = service?.variationsAppFormat?.zoneWiseVariations;
+    if (zoneVars != null && zoneVars.isNotEmpty) {
+      lowestPrice = (zoneVars.first.price ?? 0).toDouble();
+      for (final zv in zoneVars) {
+        final p = (zv.price ?? 0).toDouble();
+        if (p < lowestPrice) lowestPrice = p;
       }
+    } else if (service?.variations != null && service!.variations!.isNotEmpty) {
+      lowestPrice = (service!.variations!.first.price ?? 0).toDouble();
+      for (final v in service!.variations!) {
+        final p = (v.price ?? 0).toDouble();
+        if (p < lowestPrice) lowestPrice = p;
+      }
+    } else if (service?.crBasePrice != null && service!.crBasePrice! > 0) {
+      lowestPrice = (service!.crBasePrice ?? 0).toDouble();
+    } else if (service?.variationsAppFormat?.defaultPrice != null) {
+      lowestPrice =
+          (service!.variationsAppFormat!.defaultPrice ?? 0).toDouble();
     }
 
     return Padding(
@@ -168,17 +173,18 @@ class FavoriteServiceItemView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "starts_from".tr,
-                                style: robotoRegular.copyWith(
-                                  fontSize: Dimensions.fontSizeSmall,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .color!
-                                      .withValues(alpha: 0.5),
+                              if (lowestPrice > 0)
+                                Text(
+                                  "starts_from".tr,
+                                  style: robotoRegular.copyWith(
+                                    fontSize: Dimensions.fontSizeSmall,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .color!
+                                        .withValues(alpha: 0.5),
+                                  ),
                                 ),
-                              ),
                               const SizedBox(
                                 height: Dimensions.paddingSizeExtraSmall,
                               ),
@@ -201,41 +207,56 @@ class FavoriteServiceItemView extends StatelessWidget {
                                           ),
                                         ),
                                       ),
-                                    discountAmount! > 0
-                                        ? Directionality(
-                                            textDirection: TextDirection.ltr,
-                                            child: Text(
-                                              PriceConverter.convertPrice(
-                                                lowestPrice,
-                                                discount:
-                                                    discountAmount!.toDouble(),
-                                                discountType:
-                                                    discountAmountType,
-                                              ),
-                                              style: robotoBold.copyWith(
-                                                  fontSize: Dimensions
-                                                      .paddingSizeDefault,
-                                                  color: Get.isDarkMode
-                                                      ? Theme.of(context)
-                                                          .primaryColorLight
-                                                      : Theme.of(context)
-                                                          .primaryColor),
-                                            ),
-                                          )
-                                        : Directionality(
-                                            textDirection: TextDirection.ltr,
-                                            child: Text(
-                                              PriceConverter.convertPrice(
-                                                  lowestPrice),
-                                              style: robotoBold.copyWith(
-                                                fontSize:
-                                                    Dimensions.fontSizeLarge,
-                                                color: Get.isDarkMode
-                                                    ? Theme.of(context)
-                                                        .primaryColorLight
-                                                    : Theme.of(context)
-                                                        .primaryColor,
-                                              ),
+                                    lowestPrice > 0
+                                        ? (discountAmount! > 0
+                                            ? Directionality(
+                                                textDirection:
+                                                    TextDirection.ltr,
+                                                child: Text(
+                                                  PriceConverter.convertPrice(
+                                                    lowestPrice,
+                                                    discount: discountAmount!
+                                                        .toDouble(),
+                                                    discountType:
+                                                        discountAmountType,
+                                                  ),
+                                                  style: robotoBold.copyWith(
+                                                      fontSize: Dimensions
+                                                          .paddingSizeDefault,
+                                                      color: Get.isDarkMode
+                                                          ? Theme.of(context)
+                                                              .primaryColorLight
+                                                          : Theme.of(context)
+                                                              .primaryColor),
+                                                ),
+                                              )
+                                            : Directionality(
+                                                textDirection:
+                                                    TextDirection.ltr,
+                                                child: Text(
+                                                  PriceConverter.convertPrice(
+                                                      lowestPrice),
+                                                  style: robotoBold.copyWith(
+                                                    fontSize: Dimensions
+                                                        .fontSizeLarge,
+                                                    color: Get.isDarkMode
+                                                        ? Theme.of(context)
+                                                            .primaryColorLight
+                                                        : Theme.of(context)
+                                                            .primaryColor,
+                                                  ),
+                                                ),
+                                              ))
+                                        : Text(
+                                            'get_quote'.tr,
+                                            style: robotoBold.copyWith(
+                                              fontSize:
+                                                  Dimensions.fontSizeLarge,
+                                              color: Get.isDarkMode
+                                                  ? Theme.of(context)
+                                                      .primaryColorLight
+                                                  : Theme.of(context)
+                                                      .primaryColor,
                                             ),
                                           ),
                                   ]),

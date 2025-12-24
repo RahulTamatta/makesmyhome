@@ -412,12 +412,8 @@ class RouteHelper {
             )),
     GetPage(name: signUp, page: () => const SignUpScreen()),
     GetPage(name: community, page: () => const CommunityScreen()),
-    GetPage(
-        name: autocare,
-        page: () => const AutocareMainScreen()),
-    GetPage(
-        name: autocarePackages,
-        page: () => const AutocarePackagesScreen()),
+    GetPage(name: autocare, page: () => const AutocareMainScreen()),
+    GetPage(name: autocarePackages, page: () => const AutocarePackagesScreen()),
     GetPage(
         name: accessLocation,
         page: () => AccessLocationScreen(

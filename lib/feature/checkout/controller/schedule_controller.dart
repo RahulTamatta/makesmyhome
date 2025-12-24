@@ -31,6 +31,11 @@ class ScheduleController extends GetxController implements GetxService{
 
   String? scheduleTime;
 
+  List<String> _availableSlots = [];
+  List<String> get availableSlots => _availableSlots;
+  bool _loadingAvailability = false;
+  bool get loadingAvailability => _loadingAvailability;
+
 
   /// Repeat Booking /////
 
@@ -151,6 +156,42 @@ class ScheduleController extends GetxController implements GetxService{
       scheduleTime = date;
     }else{
      scheduleTime = null;
+    }
+  }
+
+  Future<void> fetchAvailability({required String serviceId, required String providerId, int durationMinutes = 60, int stepMinutes = 30}) async {
+    _loadingAvailability = true;
+    _availableSlots = [];
+    update();
+    final date = selectedDate;
+    Response response = await scheduleRepo.getAvailability(serviceId: serviceId, providerId: providerId, date: date, duration: durationMinutes, step: stepMinutes);
+    if (response.statusCode == 200 && response.body['response_code'] == 'default_200') {
+      List<dynamic> slots = response.body['content']['slots'] ?? [];
+      _availableSlots = slots.map((e) => e.toString()).toList();
+    } else {
+      _availableSlots = [];
+    }
+    _loadingAvailability = false;
+    update();
+  }
+
+  Future<void> fetchAvailabilityAuto({int durationMinutes = 60, int stepMinutes = 30}) async {
+    try{
+      final cart = Get.find<CartController>();
+      final providerId = cart.selectedProvider?.id ?? '';
+      String serviceId = '';
+      if (cart.cartList.isNotEmpty && cart.cartList.first.service != null) {
+        serviceId = cart.cartList.first.service!.id ?? '';
+      }
+      if (providerId.isNotEmpty && serviceId.isNotEmpty) {
+        await fetchAvailability(serviceId: serviceId, providerId: providerId, durationMinutes: durationMinutes, stepMinutes: stepMinutes);
+      } else {
+        _availableSlots = [];
+        update();
+      }
+    } catch(e){
+      _availableSlots = [];
+      update();
     }
   }
 

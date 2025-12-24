@@ -3,6 +3,7 @@ import 'package:makesmyhome/common/models/api_response_model.dart';
 import 'package:makesmyhome/feature/service/model/recommendation_search_model.dart';
 import 'package:makesmyhome/helper/data_sync_helper.dart';
 import 'package:makesmyhome/utils/core_export.dart';
+import 'package:makesmyhome/helper/get_di.dart';
 import 'package:get/get.dart';
 
 class ServiceController extends GetxController implements GetxService {
@@ -335,15 +336,26 @@ class ServiceController extends GetxController implements GetxService {
       Response response = await serviceRepo.getServiceListBasedOnSubCategory(
           subCategoryID: subCategoryID, offset: offset);
       if (response.statusCode == 200) {
-        _subcategoryBasedServiceContent =
-            ServiceModel.fromJson(response.body).content;
-        if (offset != 1 && _subCategoryBasedServiceList != null) {
-          _subCategoryBasedServiceList!
-              .addAll(_subcategoryBasedServiceContent?.serviceList ?? []);
+        final body = response.body;
+        if (body != null && body['response_code'] == 'default_200') {
+          _subcategoryBasedServiceContent = ServiceModel.fromJson(body).content;
+          if (offset != 1 && _subCategoryBasedServiceList != null) {
+            _subCategoryBasedServiceList!
+                .addAll(_subcategoryBasedServiceContent?.serviceList ?? []);
+          } else {
+            _subCategoryBasedServiceList = [];
+            _subCategoryBasedServiceList!
+                .addAll(_subcategoryBasedServiceContent?.serviceList ?? []);
+          }
         } else {
+          _subcategoryBasedServiceContent = ServiceContent(
+            currentPage: 1,
+            serviceList: [],
+            from: 0,
+            lastPage: 1,
+            total: 0,
+          );
           _subCategoryBasedServiceList = [];
-          _subCategoryBasedServiceList!
-              .addAll(_subcategoryBasedServiceContent?.serviceList ?? []);
         }
       } else {
         ApiChecker.checkApi(response);
@@ -354,11 +366,17 @@ class ServiceController extends GetxController implements GetxService {
       }
     } else {
       _subCategoryBasedServiceList = [];
+      if (isShouldUpdate) {
+        update();
+      }
     }
   }
 
-  Future<void> getCampaignBasedServiceList(
-      String campaignID, bool reload) async {
+  Future<void> getCampaignBasedServiceList(String campaignID,
+      {bool reload = false}) async {
+    if (reload) {
+      _campaignBasedServiceList = [];
+    }
     Response response =
         await serviceRepo.getItemsBasedOnCampaignId(campaignID: campaignID);
     if (response.body['response_code'] == 'default_200') {
@@ -591,11 +609,34 @@ class ServiceController extends GetxController implements GetxService {
         AppConstants.popularServiceUri,
         AppConstants.trendingServiceUri,
         AppConstants.recommendedServiceUri,
+        AppConstants.recentlyViewedServiceUri,
         AppConstants.getFeaturedCategoryService,
+        AppConstants.serviceBasedOnSubcategory,
+        AppConstants.crAllServiceUri,
+        AppConstants.crServicesBySubcategoryUri,
       ];
 
-      for (final endpoint in serviceEndpoints) {
-        await sharedPreferences.remove(AppConstants.baseUrl + endpoint);
+      final keys = sharedPreferences.getKeys();
+      for (final key in keys) {
+        for (final prefix in serviceEndpoints) {
+          if (key.startsWith(prefix)) {
+            await sharedPreferences.remove(key);
+            break;
+          }
+        }
+      }
+
+      // Also clear app (mobile) Drift cache entries that match prefixes
+      if (!kIsWeb) {
+        final allCache = await database.getAllCacheResponses();
+        for (final row in allCache) {
+          for (final prefix in serviceEndpoints) {
+            if (row.endPoint.startsWith(prefix)) {
+              await database.deleteCacheResponse(row.id);
+              break;
+            }
+          }
+        }
       }
       debugPrint('ServiceController: Cleared service cache for debugging');
     } catch (e) {
@@ -635,9 +676,12 @@ class ServiceController extends GetxController implements GetxService {
     debugPrint("Popular Services: ${_popularServiceList?.length ?? 0}");
     debugPrint("Trending Services: ${_trendingServiceList?.length ?? 0}");
     debugPrint("Recommended Services: ${_recommendedServiceList?.length ?? 0}");
-    debugPrint("Recently Viewed Services: ${_recentlyViewServiceList?.length ?? 0}");
-    debugPrint("Subcategory Based Services: ${_subCategoryBasedServiceList?.length ?? 0}");
-    debugPrint("Campaign Based Services: ${_campaignBasedServiceList?.length ?? 0}");
+    debugPrint(
+        "Recently Viewed Services: ${_recentlyViewServiceList?.length ?? 0}");
+    debugPrint(
+        "Subcategory Based Services: ${_subCategoryBasedServiceList?.length ?? 0}");
+    debugPrint(
+        "Campaign Based Services: ${_campaignBasedServiceList?.length ?? 0}");
     debugPrint("Offer Based Services: ${_offerBasedServiceList?.length ?? 0}");
     debugPrint("All Services: ${_allService?.length ?? 0}");
   }
@@ -645,11 +689,17 @@ class ServiceController extends GetxController implements GetxService {
   void debugPrintServiceContent() {
     debugPrint("=== SERVICE CONTENT DEBUG ===");
     debugPrint("Service Content: ${_serviceContent?.toJson()}");
-    debugPrint("Popular Service Content: ${_popularBasedServiceContent?.toJson()}");
-    debugPrint("Trending Service Content: ${_trendingServiceContent?.toJson()}");
-    debugPrint("Recommended Service Content: ${_recommendedServiceContent?.toJson()}");
-    debugPrint("Recently Viewed Service Content: ${_recentlyViewServiceContent?.toJson()}");
-    debugPrint("Subcategory Based Service Content: ${_subcategoryBasedServiceContent?.toJson()}");
-    debugPrint("Offer Based Service Content: ${_offerBasedServiceContent?.toJson()}");
+    debugPrint(
+        "Popular Service Content: ${_popularBasedServiceContent?.toJson()}");
+    debugPrint(
+        "Trending Service Content: ${_trendingServiceContent?.toJson()}");
+    debugPrint(
+        "Recommended Service Content: ${_recommendedServiceContent?.toJson()}");
+    debugPrint(
+        "Recently Viewed Service Content: ${_recentlyViewServiceContent?.toJson()}");
+    debugPrint(
+        "Subcategory Based Service Content: ${_subcategoryBasedServiceContent?.toJson()}");
+    debugPrint(
+        "Offer Based Service Content: ${_offerBasedServiceContent?.toJson()}");
   }
 }

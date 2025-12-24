@@ -32,19 +32,20 @@ class DataSyncRepo {
     final response =
         await _fetchResponseFromClient(uri, body: body, method: method);
     if (response.statusCode == 200) {
-      final cacheData = CacheResponseCompanion(
-        endPoint: Value(uri),
-        header: Value(jsonEncode(response.headers)),
-        response: Value(jsonEncode(response.body)),
-      );
-
-      // Cache the data based on the platform
-      if (kIsWeb && _isWebCachesActive()) {
-        _cacheResponseWeb(uri, cacheData);
-      }
-
-      if (!kIsWeb && _isAppCachesActive()) {
-        await DbHelper.insertOrUpdate(id: uri, data: cacheData);
+      try {
+        final cacheData = CacheResponseCompanion(
+          endPoint: Value(uri),
+          header: Value(jsonEncode(response.headers)),
+          response: Value(jsonEncode(response.body)),
+        );
+        if (kIsWeb && _isWebCachesActive()) {
+          _cacheResponseWeb(uri, cacheData);
+        }
+        if (!kIsWeb && _isAppCachesActive()) {
+          await DbHelper.insertOrUpdate(id: uri, data: cacheData);
+        }
+      } catch (e) {
+        debugPrint('DataSyncRepo: cache write skipped: $e');
       }
     }
 

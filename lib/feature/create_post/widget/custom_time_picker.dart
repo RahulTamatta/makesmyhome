@@ -12,7 +12,30 @@ class CustomTimePicker extends StatelessWidget {
         children: [
           Text('time'.tr, style: robotoBold.copyWith(fontSize: Dimensions.fontSizeLarge,color: Theme.of(Get.context!).colorScheme.primary)),
           const SizedBox(width: Dimensions.paddingSizeLarge,),
-          GetBuilder<ScheduleController>(builder: (createPostController){
+          GetBuilder<ScheduleController>(builder: (sc){
+            if (sc.loadingAvailability) {
+              return const SizedBox(width: 140, height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+            }
+            if (sc.availableSlots.isNotEmpty) {
+              return SizedBox(
+                width: Get.width * 0.6,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: sc.availableSlots.map((slot) {
+                    final selected = sc.selectedTime.startsWith(slot);
+                    return ChoiceChip(
+                      label: Text(slot, style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeSmall)),
+                      selected: selected,
+                      onSelected: (_) {
+                        sc.selectedTime = "$slot:00";
+                        sc.update();
+                      },
+                    );
+                  }).toList(),
+                ),
+              );
+            }
             return TimePickerSpinner(
               is24HourMode: Get.find<SplashController>().configModel.content?.timeFormat == '24',
               normalTextStyle: robotoRegular.copyWith(color: Theme.of(context).hintColor,fontSize: Dimensions.fontSizeSmall),
@@ -25,8 +48,7 @@ class CustomTimePicker extends StatelessWidget {
               alignment: Alignment.topCenter,
               isForce2Digits: true,
               onTimeChange: (time) {
-                createPostController.selectedTime = "${time.hour}:${time.minute}:${time.second}";
-                //createPostController.buildSchedule(scheduleType: ScheduleType.schedule);
+                sc.selectedTime = "${time.hour}:${time.minute}:${time.second}";
               },
             );
           }),

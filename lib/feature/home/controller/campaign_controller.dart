@@ -51,7 +51,7 @@ class CampaignController extends GetxController implements GetxService {
     }else if(discountType == 'mixed'){
       Get.find<ServiceController>().getMixedCampaignList(campaignID,false);
     }else{
-      Get.find<ServiceController>().getCampaignBasedServiceList(campaignID,true);
+      Get.find<ServiceController>().getCampaignBasedServiceList(campaignID, reload: true);
     }
     _isLoading = false;
     update();

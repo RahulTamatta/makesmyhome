@@ -1,13 +1,14 @@
-import 'package:makesmyhome/feature/subscription/controller/subscription_controller.dart';
 import 'dart:convert';
+
+import 'package:get/get.dart';
+import 'package:makesmyhome/feature/subscription/controller/subscription_controller.dart';
 import 'package:makesmyhome/feature/subscription/view/all_subscriptions_screen.dart';
 import 'package:makesmyhome/utils/core_export.dart';
-import 'package:get/get.dart';
 import 'package:universal_html/html.dart' as html;
-import 'package:makesmyhome/helper/route_helper.dart';
 
 class SubscriptionView extends StatelessWidget {
-  // Helper method to build placeholder image
+  const SubscriptionView({super.key});
+
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
@@ -20,7 +21,6 @@ class SubscriptionView extends StatelessWidget {
     );
   }
 
-  // Optimized network image with loading and error handling
   Widget _buildNetworkImage(String? url) {
     if (url == null || url.isEmpty) return _buildPlaceholderImage();
     return Image.network(
@@ -36,7 +36,8 @@ class SubscriptionView extends StatelessWidget {
           child: Center(
             child: CircularProgressIndicator(
               value: (progress.expectedTotalBytes != null)
-                  ? progress.cumulativeBytesLoaded / (progress.expectedTotalBytes ?? 1)
+                  ? progress.cumulativeBytesLoaded /
+                      (progress.expectedTotalBytes ?? 1)
                   : null,
               strokeWidth: 2,
             ),
@@ -116,8 +117,9 @@ class SubscriptionView extends StatelessWidget {
     final controller = Get.find<SubscriptionController>();
 
     return Obx(() {
-      debugPrint('[SUBSCRIPTION_VIEW] Building - subscriptions count: ${controller.subscriptions.length}, isEmpty: ${controller.subscriptions.isEmpty}');
-      
+      debugPrint(
+          '[SUBSCRIPTION_VIEW] Building - subscriptions count: ${controller.subscriptions.length}, isEmpty: ${controller.subscriptions.isEmpty}');
+
       // if (controller.isLoading.value) {
       //   return const Center(child: CircularProgressIndicator());
       // }
@@ -273,26 +275,33 @@ class SubscriptionView extends StatelessWidget {
                                   final isSubscribedFromMap =
                                       subscriptionCtrl.isUserSubscribed(
                                           sub.subscriptionId ?? 0);
-                                  
+
                                   // FIXED: Check both sources of subscription status
-                                  final isSubscribed = isSubscribedFromMap || (sub.subscribed ?? false);
+                                  final isSubscribed = isSubscribedFromMap ||
+                                      (sub.subscribed ?? false);
                                   final auth = Get.find<AuthController>();
 
-                                  debugPrint('[SUB_BUTTON][VIEW] Subscription ID: ${sub.subscriptionId}, isSubscribedFromMap: $isSubscribedFromMap, subscribed field: ${sub.subscribed}, final status: $isSubscribed');
-                                  
+                                  debugPrint(
+                                      '[SUB_BUTTON][VIEW] Subscription ID: ${sub.subscriptionId}, isSubscribedFromMap: $isSubscribedFromMap, subscribed field: ${sub.subscribed}, final status: $isSubscribed');
+
                                   return ElevatedButton(
                                     onPressed: () {
                                       if (isSubscribed) {
-                                        debugPrint('[SUB_BUTTON][VIEW] User already subscribed to ${sub.subscriptionId}');
-                                        Get.snackbar('Info', 'You are already subscribed to this service');
+                                        debugPrint(
+                                            '[SUB_BUTTON][VIEW] User already subscribed to ${sub.subscriptionId}');
+                                        Get.snackbar('Info',
+                                            'You are already subscribed to this service');
                                       } else {
-                                        debugPrint('[SUB_BUTTON][VIEW] Initiating subscription for ${sub.subscriptionId}');
+                                        debugPrint(
+                                            '[SUB_BUTTON][VIEW] Initiating subscription for ${sub.subscriptionId}');
                                         if (!auth.isLoggedIn()) {
-                                          debugPrint('[SUB_BUTTON][VIEW] User not logged in, redirecting to sign in');
+                                          debugPrint(
+                                              '[SUB_BUTTON][VIEW] User not logged in, redirecting to sign in');
                                           Get.toNamed(RouteHelper.signIn);
                                         } else {
                                           // FIXED: Use direct Razorpay payment instead of dialogs
-                                          debugPrint('[SUB_BUTTON][VIEW] Opening Razorpay payment directly');
+                                          debugPrint(
+                                              '[SUB_BUTTON][VIEW] Opening Razorpay payment directly');
                                           _initiateRazorpayPayment(sub);
                                         }
                                       }
@@ -310,7 +319,9 @@ class SubscriptionView extends StatelessWidget {
                                       minimumSize: const Size(0, 36),
                                     ),
                                     child: Text(
-                                      isSubscribed ? 'Subscribed' : 'Subscribe Now',
+                                      isSubscribed
+                                          ? 'Subscribed'
+                                          : 'Subscribe Now',
                                       style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600),
@@ -369,8 +380,6 @@ class SubscriptionView extends StatelessWidget {
       // );
     });
   }
-
-
 
   void _initiateRazorpayPayment(dynamic subscription) {
     debugPrint('[PAYMENT_FLOW] Setting up Razorpay payment parameters');
@@ -452,8 +461,9 @@ class SubscriptionView extends StatelessWidget {
       final url = '${AppConstants.baseUrl}/payment/subscription?$query';
 
       debugPrint('[PAYMENT_FLOW] Payment URL generated: $url');
-      debugPrint('[PAYMENT_FLOW] Platform: ${GetPlatform.isWeb ? 'web' : 'mobile'}');
-      
+      debugPrint(
+          '[PAYMENT_FLOW] Platform: ${GetPlatform.isWeb ? 'web' : 'mobile'}');
+
       if (GetPlatform.isWeb) {
         debugPrint('[PAYMENT_FLOW] Opening payment URL in web browser');
         html.window.open(url, "_self");

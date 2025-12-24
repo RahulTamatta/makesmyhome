@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:makesmyhome/utils/core_export.dart';
 import 'package:makesmyhome/feature/autocare/controller/autocare_controller.dart';
 import 'package:makesmyhome/utils/dimensions.dart';
 import 'package:makesmyhome/utils/styles.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class AutocareMainScreen extends StatelessWidget {
   const AutocareMainScreen({Key? key}) : super(key: key);
@@ -18,158 +18,119 @@ class AutocareMainScreen extends StatelessWidget {
           builder: (controller) {
             return CustomScrollView(
               slivers: [
-                // Header with location and vehicle info
-                SliverToBoxAdapter(
-                  child: _buildHeader(context),
-                ),
-
                 // Banner with cashback offer
                 SliverToBoxAdapter(
                   child: _buildPromoBanner(context),
                 ),
 
-                // Services Section
+                // Section Title
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Doorstep Autocare Services',
-                          style: robotoBold.copyWith(
-                            fontSize: Dimensions.fontSizeLarge,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: Dimensions.paddingSizeDefault),
-                      ],
+                    padding: const EdgeInsets.fromLTRB(
+                        Dimensions.paddingSizeDefault,
+                        Dimensions.paddingSizeLarge,
+                        Dimensions.paddingSizeDefault,
+                        Dimensions.paddingSizeSmall),
+                    child: Text(
+                      'Car Wash',
+                      style: robotoBold.copyWith(
+                        fontSize: Dimensions.fontSizeLarge,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                     ),
                   ),
                 ),
 
-                // Services Grid
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Dimensions.paddingSizeDefault,
+                // Init loader to fetch Car Wash subcategories
+                SliverToBoxAdapter(
+                  child: GetBuilder<CategoryController>(
+                    initState: (state) {
+                      Future.delayed(Duration.zero, () async {
+                        final cc = Get.find<CategoryController>();
+                        await cc.getCategoryList(true);
+                        final list = cc.categoryList ?? [];
+                        final keywords = [
+                          'wash',
+                          'car wash',
+                          'autocare',
+                          'detailing'
+                        ];
+                        int index = list.indexWhere((c) {
+                          final n = (c.name ?? '').toLowerCase();
+                          return keywords.any((k) => n.contains(k));
+                        });
+                        if (index >= 0) {
+                          final cat = list[index];
+                          await cc.getSubCategoryList(cat.id!,
+                              shouldUpdate: true);
+                        }
+                      });
+                    },
+                    builder: (_) => const SizedBox.shrink(),
                   ),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      childAspectRatio: 0.85,
-                      crossAxisSpacing: Dimensions.paddingSizeDefault,
-                      mainAxisSpacing: Dimensions.paddingSizeDefault,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final service = controller.services[index];
-                        return _buildServiceCard(context, service, controller);
-                      },
-                      childCount: controller.services.length,
-                    ),
-                  ),
+                ),
+
+                // Box grid (HOORA-like) of car wash subcategories
+                GetBuilder<CategoryController>(
+                  builder: (categoryController) {
+                    final subCategoryList =
+                        categoryController.subCategoryList ?? [];
+                    if (categoryController.subCategoryList == null) {
+                      return SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              ResponsiveHelper.isMobile(context) ? 4 : 6,
+                          mainAxisSpacing: Dimensions.paddingSizeSmall,
+                          crossAxisSpacing: Dimensions.paddingSizeSmall,
+                          childAspectRatio: 0.75,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildBoxShimmer(context),
+                          childCount: 8,
+                        ),
+                      );
+                    }
+                    if (subCategoryList.isEmpty) {
+                      return SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: Get.height / 1.5,
+                          child: NoDataScreen(
+                            text: 'no_subcategory_found'.tr,
+                            type: NoDataType.categorySubcategory,
+                          ),
+                        ),
+                      );
+                    }
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Dimensions.paddingSizeDefault,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              ResponsiveHelper.isMobile(context) ? 4 : 6,
+                          mainAxisSpacing: Dimensions.paddingSizeSmall,
+                          crossAxisSpacing: Dimensions.paddingSizeSmall,
+                          childAspectRatio: 0.75,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final cat = subCategoryList[index];
+                            return _buildBoxItem(context, cat);
+                          },
+                          childCount: subCategoryList.length,
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
                 const SliverToBoxAdapter(
-                  child: SizedBox(height: Dimensions.paddingSizeLarge),
-                ),
+                    child: SizedBox(height: Dimensions.paddingSizeLarge)),
               ],
             );
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Call support action
-          Get.snackbar(
-            'Support',
-            'Calling customer support...',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.call, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Location Section
-          Expanded(
-            child: Row(
-              children: [
-                Icon(
-                  Icons.location_on,
-                  color: Theme.of(context).primaryColor,
-                  size: 24,
-                ),
-                const SizedBox(width: Dimensions.paddingSizeSmall),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Other - Add address',
-                            style: robotoMedium.copyWith(
-                              fontSize: Dimensions.fontSizeDefault,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
-                          ),
-                          const Icon(Icons.arrow_drop_down, size: 20),
-                        ],
-                      ),
-                      Text(
-                        'Surat',
-                        style: robotoRegular.copyWith(
-                          fontSize: Dimensions.fontSizeSmall,
-                          color: Theme.of(context).hintColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Vehicle Section
-          Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Baleno',
-                    style: robotoMedium.copyWith(
-                      fontSize: Dimensions.fontSizeDefault,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                  ),
-                  Text(
-                    'Maruti Suzuki',
-                    style: robotoRegular.copyWith(
-                      fontSize: Dimensions.fontSizeSmall,
-                      color: Theme.of(context).hintColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: Dimensions.paddingSizeSmall),
-              Icon(
-                Icons.directions_car,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                size: 32,
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -258,7 +219,8 @@ class AutocareMainScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                          borderRadius:
+                              BorderRadius.circular(Dimensions.radiusSmall),
                         ),
                         child: Text(
                           '05:58:09',
@@ -307,82 +269,53 @@ class AutocareMainScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceCard(
-    BuildContext context,
-    service,
-    AutocareController controller,
-  ) {
+  Widget _buildBoxItem(BuildContext context, CategoryModel categoryModel) {
     return InkWell(
       onTap: () {
-        controller.navigateToPackageDetails(service.id);
+        Get.find<ServiceController>().cleanSubCategory();
+        Get.toNamed(
+            RouteHelper.allServiceScreenRoute(categoryModel.id!.toString()));
       },
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              // Service Image
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
-                  child: CachedNetworkImage(
-                    imageUrl: service.imageUrl,
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => Container(
-                      color: Theme.of(context).cardColor,
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Theme.of(context).cardColor,
-                      child: const Icon(Icons.car_repair),
-                    ),
-                  ),
-                ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+          ),
+        ),
+        padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: CustomImage(
+                image: categoryModel.imageFullPath ?? "",
+                height: 42,
+                width: 42,
+                fit: BoxFit.cover,
               ),
-
-              // Discount Badge
-              if (service.hasDiscount && service.discountText != null)
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      service.discountText!,
-                      style: robotoMedium.copyWith(
-                        fontSize: 10,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: Dimensions.paddingSizeSmall),
-          Text(
-            service.name,
-            textAlign: TextAlign.center,
-            style: robotoMedium.copyWith(
-              fontSize: Dimensions.fontSizeSmall,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            Text(
+              categoryModel.name ?? '',
+              style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeSmall),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoxShimmer(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
       ),
     );
   }

@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:makesmyhome/common/models/errrors_model.dart';
-import 'package:makesmyhome/utils/core_export.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:makesmyhome/common/models/errrors_model.dart';
+import 'package:makesmyhome/utils/core_export.dart';
 import 'package:path/path.dart';
 
 class ApiClient extends GetxService {
@@ -23,9 +23,12 @@ class ApiClient extends GetxService {
     printLog('Token: $token');
     AddressModel? addressModel;
     try {
-      addressModel = AddressModel.fromJson(
-          jsonDecode(sharedPreferences.getString(AppConstants.userAddress)!));
-      printLog(addressModel.toJson());
+      final cachedAddress =
+          sharedPreferences.getString(AppConstants.userAddress);
+      if (cachedAddress != null && cachedAddress.isNotEmpty) {
+        addressModel = AddressModel.fromJson(jsonDecode(cachedAddress));
+        printLog(addressModel.toJson());
+      }
     } catch (e) {
       if (kDebugMode) {
         print('');
@@ -33,11 +36,12 @@ class ApiClient extends GetxService {
     }
 
     ///pick zone id to update header
+    final hasToken = (token ?? '').isNotEmpty;
     updateHeader(
         token,
         addressModel?.zoneId,
         sharedPreferences.getString(AppConstants.languageCode),
-        sharedPreferences.getString(AppConstants.guestId));
+        hasToken ? null : sharedPreferences.getString(AppConstants.guestId));
   }
   void updateHeader(
       String? token, String? zoneIDs, String? languageCode, String? guestID) {
@@ -47,33 +51,36 @@ class ApiClient extends GetxService {
     };
 
     // Always attach essential headers required by backend to resolve zone-filtered data
-    final resolvedZoneId = zoneIDs ?? sharedPreferences.getString(AppConstants.zoneId) ?? '';
-    final resolvedLang = languageCode ?? AppConstants.languages[0].languageCode!;
+    final resolvedZoneId =
+        zoneIDs ?? sharedPreferences.getString(AppConstants.zoneId) ?? '';
+    final resolvedLang =
+        languageCode ?? AppConstants.languages[0].languageCode!;
 
     // zoneId is critical for service endpoints - include on all platforms
     if (resolvedZoneId.isNotEmpty && resolvedZoneId != 'configuration') {
-      headers[AppConstants.zoneId] = resolvedZoneId;
-    } else {
-      // Fallback zone for web when no zone is set or still using default
-      headers[AppConstants.zoneId] = 'configuration';
+      headers[AppConstants.zoneId] = resolvedZoneId; // 'zoneId'
+      // Backward compatibility: also send lowercase 'zoneid' header
+      headers['zoneid'] = resolvedZoneId;
     }
 
     // X-localization header is required for proper API responses
     headers[AppConstants.localizationKey] = resolvedLang;
 
-    // Guest ID - include if available
-    final guest = guestID ?? sharedPreferences.getString(AppConstants.guestId) ?? '';
-    if (guest.isNotEmpty) {
+    // Guest ID - include only when NOT logged in (avoid mixing flows)
+    final guest =
+        guestID ?? sharedPreferences.getString(AppConstants.guestId) ?? '';
+    final hasToken = token != null && token.isNotEmpty;
+    if (guest.isNotEmpty && !hasToken) {
       headers[AppConstants.guestId] = guest;
     }
-    
+
     // Authorization token
-    if (token != null && token.isNotEmpty) {
+    if (hasToken) {
       headers['Authorization'] = 'Bearer $token';
     }
-    
+
     _mainHeaders = headers;
-    
+
     if (kDebugMode) {
       debugPrint('ApiClient headers updated: $headers');
     }
@@ -84,10 +91,12 @@ class ApiClient extends GetxService {
     final token = sharedPreferences.getString(AppConstants.token);
     final zoneId = sharedPreferences.getString(AppConstants.zoneId);
     final languageCode = sharedPreferences.getString(AppConstants.languageCode);
-    final guestId = sharedPreferences.getString(AppConstants.guestId);
-    
+    final hasToken = token != null && token.isNotEmpty;
+    final guestId =
+        hasToken ? null : sharedPreferences.getString(AppConstants.guestId);
+
     updateHeader(token, zoneId, languageCode, guestId);
-    
+
     if (kDebugMode) {
       debugPrint('ApiClient headers refreshed for web');
     }
@@ -110,7 +119,7 @@ class ApiClient extends GetxService {
         final Uri requestUri = uri.startsWith('http')
             ? Uri.parse(uri)
             : Uri.parse(appBaseUrl! + uri);
-            
+
         final http.Response response = await http
             .get(
               requestUri,
@@ -119,7 +128,9 @@ class ApiClient extends GetxService {
             .timeout(Duration(seconds: timeoutInSeconds));
         return handleResponse(response, uri);
       } catch (e) {
-        try { log('GET $uri attempt#$attempt failed: $e'); } catch (_) {}
+        try {
+          log('GET $uri attempt#$attempt failed: $e');
+        } catch (_) {}
         if (attempt >= maxAttempts) {
           return Response(statusCode: 1, statusText: noInternetMessage);
         }
@@ -146,7 +157,7 @@ class ApiClient extends GetxService {
         final Uri requestUri = uri!.startsWith('http')
             ? Uri.parse(uri)
             : Uri.parse(appBaseUrl! + uri);
-            
+
         final http.Response response = await http
             .post(
               requestUri,
@@ -156,7 +167,9 @@ class ApiClient extends GetxService {
             .timeout(Duration(seconds: timeoutInSeconds));
         return handleResponse(response, uri);
       } catch (e) {
-        try { log('POST $uri attempt#$attempt failed: $e'); } catch (_) {}
+        try {
+          log('POST $uri attempt#$attempt failed: $e');
+        } catch (_) {}
         if (attempt >= maxAttempts) {
           return Response(statusCode: 1, statusText: noInternetMessage);
         }
@@ -253,11 +266,11 @@ class ApiClient extends GetxService {
         ..._mainHeaders,
         if (headers != null) ...headers,
       };
-      
+
       final Uri requestUri = uri!.startsWith('http')
           ? Uri.parse(uri)
           : Uri.parse(appBaseUrl! + uri);
-          
+
       http.Response response = await http
           .put(
             requestUri,

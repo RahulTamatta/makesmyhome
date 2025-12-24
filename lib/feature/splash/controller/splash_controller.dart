@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:makesmyhome/api/local/cache_response.dart';
 import 'package:makesmyhome/helper/data_sync_helper.dart';
+import 'package:makesmyhome/feature/cr_mode/controller/cr_mode_controller.dart';
 import 'package:makesmyhome/utils/core_export.dart';
 import 'package:get/get.dart';
 
@@ -23,7 +24,7 @@ class SplashController extends GetxController implements GetxService {
   bool savedCookiesData = false;
 
   Future<bool> getConfigData() async {
-    DataSyncHelper.fetchAndSyncData(
+    await DataSyncHelper.fetchAndSyncData(
       fetchFromLocal: () => splashRepo.getConfigData<CacheResponseData>(
           source: DataSourceEnum.local),
       fetchFromClient: () =>
@@ -41,6 +42,12 @@ class SplashController extends GetxController implements GetxService {
           decodedData = data;
         }
         _configModel = ConfigModel.fromJson(data);
+        try {
+          final enabled = (_configModel?.content?.crModuleEnabled ?? 1) == 1;
+          if (Get.isRegistered<CrModeController>()) {
+            Get.find<CrModeController>().setServerEnabled(enabled);
+          }
+        } catch (_) {}
 
         if (_configModel?.content?.maintenanceMode?.maintenanceStatus == 1 &&
             _configModel?.content?.maintenanceMode?.selectedMaintenanceSystem
@@ -164,7 +171,8 @@ class SplashController extends GetxController implements GetxService {
         final dynamic body = response.body;
         if (body is Map && body['message'] != null) {
           message = body['message'].toString();
-        } else if (response.statusText != null && response.statusText!.isNotEmpty) {
+        } else if (response.statusText != null &&
+            response.statusText!.isNotEmpty) {
           message = response.statusText!;
         }
         customSnackBar(message);
